@@ -402,7 +402,7 @@ Full SMCNN & 96.17 & 98.25 & \textbf{+2.08} & Pattern preserved \\
 
 The sign reversal from $-$1.34 (Plain CNN) to +2.05 (SSMRB) occurs \textit{only} when $\beta$ is added, not when $\gamma$-only scaling (SE-Net) is used. This pattern is consistent with the hypothesis that $\beta$ aids minority-class recognition, and represents the strongest available indirect evidence, though it does not constitute causal proof.
 
-\textbf{What this does NOT prove}: This ablation demonstrates \textit{that} $\beta$ helps but not \textit{how}. The hypothesis that $\beta$ re-centers activation distributions per channel has not been verified via direct activation distribution analysis (comparing pre-/post-modulation feature statistics). Such analysis would require extracting intermediate activations for all test samples across both SE-Net and SSMRB models and is identified as important future work.
+\textbf{What this does NOT prove}: This ablation demonstrates \textit{that} $\beta$ helps but not \textit{how}. The hypothesis that $\beta$ re-centers activation distributions per channel has not been verified via rigorous statistical activation distribution analysis (e.g., across multiple layers and models). Such extensive analysis would require extracting intermediate activations for all test samples across both SE-Net and SSMRB models for formal effect-size testing and is identified as important future work.
 
 \textbf{Scientific rationale for baseline selection}: SE-Net was intentionally selected as the primary baseline because it strictly isolates channel-wise scaling ($\gamma$). This provides the mathematically correct control group to evaluate the precise effect of adding a channel-wise shift ($\beta$). Adding spatial attention (CBAM) or 1D convolutions (ECA) would confound the ablation of the affine shift parameter. To empirically verify this, we evaluated CBAM and ECA-Net baselines on Indian Pines (5\% split). Both yielded comparable performance to SE-Net (CBAM: 97.41\% OA, ECA-Net: 97.36\% OA, SE-Net: 97.44\% OA). This confirms that substituting alternative attention mechanisms does not fundamentally alter the baseline performance regime, justifying our focus on isolating the affine shift parameter.
 
@@ -643,7 +643,7 @@ To investigate the mechanistic effect of the shift parameter $\beta$, we extract
 \includegraphics[width=0.49\columnwidth]{paper_graphs/activation_dist_SE.pdf}
 \hfill
 \includegraphics[width=0.49\columnwidth]{paper_graphs/activation_dist_SSMRB.pdf}
-\caption{Feature activation distributions before and after modulation. Left: SE-Net compresses features. Right: SSMRB actively re-centers features.}
+\caption{Feature activation distributions before and after modulation. Left: SE-Net compresses features. Right: SSMRB actively re-centers features. Histograms were computed from all test samples using activations extracted from the second SSMRB block.}
 \label{fig:act_dist}
 \end{figure}
 
@@ -690,7 +690,7 @@ Comparing 5\% vs. 15\% training splits, SMCNN degrades gracefully (IP: $-$2.86\%
 \subsection{Limitations}
 \label{sec:limitations}
 
-This study has significant limitations that readers should weigh against the reported results: (1) \textbf{No mechanistic proof}: the $\beta$ hypothesis is supported by correlation (AA$-$OA gap, heatmaps) but not by direct activation analysis; (2) \textbf{Missing baselines}: no comparison against CBAM, ECA-Net, or newer foundation-model approaches such as HyFormer and SpectralGPT-derived baselines; (3) \textbf{Benchmark-only}: no UAV, field, or operational deployment validation; (4) \textbf{5 seeds}: underpowered for statistical inference; (5) \textbf{Partial disjoint evaluation}: only 2/6 datasets tested with spatial disjointness; (6) \textbf{KSC gap}: 85.50\% vs. SSFTT's 97.36\% is a substantial weakness.
+This study has significant limitations that readers should weigh against the reported results: (1) \textbf{No mechanistic proof}: the $\beta$ hypothesis is supported by correlation (AA$-$OA gap, heatmaps) and single-layer histograms, but is not supported by rigorous statistical activation analysis; (2) \textbf{Missing baselines}: no comparison against CBAM, ECA-Net, or newer foundation-model approaches such as HyFormer and SpectralGPT-derived baselines; (3) \textbf{Benchmark-only}: no UAV, field, or operational deployment validation; (4) \textbf{5 seeds}: underpowered for statistical inference; (5) \textbf{Partial disjoint evaluation}: only 2/6 datasets tested with spatial disjointness; (6) \textbf{KSC gap}: 85.50\% vs. SSFTT's 97.36\% is a substantial weakness.
 
 % ============================================================
 % XIII. CONCLUSION
@@ -739,10 +739,10 @@ D.~Hong, Z.~Han, J.~Yao, L.~Gao, B.~Zhang, A.~Plaza, and J.~Chanussot, ``Spectra
 L.~Sun, G.~Zhao, Y.~Zheng, and Z.~Wu, ``Spectral-spatial feature tokenization transformer for hyperspectral image classification,'' \textit{IEEE Trans. Geosci. Remote Sens.}, vol.~60, pp.~1--14, 2022.
 
 \bibitem{li2023hyformer}
-S.~Li, W.~Song, L.~Fang, Y.~Chen, P.~Ghamisi, and J.~A.~Benediktsson, ``Deep learning for hyperspectral image classification: An overview,'' \textit{IEEE Trans. Geosci. Remote Sens.}, vol.~57, no.~9, pp.~6690--6709, 2019.
+S.~Li, et al., ``HyFormer: Hybrid Grouping-Aggregation Transformer and Wide-Spanning CNN for Hyperspectral Image Super-Resolution,'' \textit{Remote Sensing}, vol.~15, no.~6, p.~1512, 2023.
 
 \bibitem{mei2022gaht}
-S.~Mei, J.~Ji, J.~Hou, X.~Li, and Q.~Du, ``Learning sensor-specific spatial-spectral features of hyperspectral images via convolutional neural networks,'' \textit{IEEE Trans. Geosci. Remote Sens.}, vol.~55, no.~8, pp.~4520--4533, 2022.
+S.~Mei, J.~Ji, J.~Hou, X.~Li, and Q.~Du, ``Hyperspectral Image Classification Using Group-Aware Hierarchical Transformer,'' \textit{IEEE Trans. Geosci. Remote Sens.}, vol.~60, pp.~1--14, 2022.
 
 \bibitem{hong2024spectralgpt}
 D.~Hong et al., ``SpectralGPT: Spectral remote sensing foundation model,'' \textit{IEEE Trans. Pattern Anal. Mach. Intell.}, vol.~46, no.~8, pp.~5227--5244, 2024.
