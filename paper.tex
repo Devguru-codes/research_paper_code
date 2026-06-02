@@ -255,7 +255,7 @@ All experiments use 5\% stratified training split, batch size 64, 100 maximum ep
 % FIX 7: Strengthened leakage prevention description
 \subsection{Data Splitting and Leakage Prevention}
 
-Splits are performed at the \textbf{pixel level before patch extraction}, ensuring no test pixel appears in any training patch. Stratified splitting preserves class distribution. No data augmentation is applied, eliminating a potential leakage source. Patches are centered on labeled pixels only; no sliding window is used. All code is publicly available at \url{https://github.com/Devguru-codes/research_paper_code} with trained model checkpoints for all 6 datasets $\times$ 5 seeds = 30 models, enabling full reproducibility verification.
+Splits are performed at the \textbf{pixel level before patch extraction}, ensuring no test pixel appears in any training patch. Stratified splitting preserves class distribution. No data augmentation is applied, eliminating a potential leakage source. Patches are centered on labeled pixels only; no sliding window is used. All code is publicly available at \texttt{https://github.com/Devguru-codes/research\_paper\_code} with trained model checkpoints for all 6 datasets $\times$ 5 seeds = 30 models, enabling full reproducibility verification.
 
 % ============================================================
 % V. RESULTS
@@ -404,7 +404,22 @@ The sign reversal from $-$1.34 (Plain CNN) to +2.05 (SSMRB) occurs \textit{only}
 
 \textbf{What this does NOT prove}: This ablation demonstrates \textit{that} $\beta$ helps but not \textit{how}. The hypothesis that $\beta$ re-centers activation distributions per channel has not been verified via rigorous statistical activation distribution analysis (e.g., across multiple layers and models). Such extensive analysis would require extracting intermediate activations for all test samples across both SE-Net and SSMRB models for formal effect-size testing and is identified as important future work.
 
-\textbf{Scientific rationale for baseline selection}: SE-Net was intentionally selected as the primary baseline because it strictly isolates channel-wise scaling ($\gamma$). This provides the mathematically correct control group to evaluate the precise effect of adding a channel-wise shift ($\beta$). Adding spatial attention (CBAM) or 1D convolutions (ECA) would confound the ablation of the affine shift parameter. To empirically verify this, we evaluated CBAM and ECA-Net baselines on Indian Pines (5\% split). Both yielded comparable performance to SE-Net (CBAM: 97.41\% OA, ECA-Net: 97.36\% OA, SE-Net: 97.44\% OA). This confirms that substituting alternative attention mechanisms does not fundamentally alter the baseline performance regime, justifying our focus on isolating the affine shift parameter.
+\textbf{Scientific rationale for baseline selection}: SE-Net was intentionally selected as the primary baseline because it strictly isolates channel-wise scaling ($\gamma$). This provides the mathematically correct control group to evaluate the precise effect of adding a channel-wise shift ($\beta$). Adding spatial attention (CBAM) or 1D convolutions (ECA) would confound the ablation of the affine shift parameter. To empirically verify this, we evaluated CBAM and ECA-Net baselines on Indian Pines (5\% split). As shown in Table~\ref{tab:attention_baselines}, substituting alternative attention mechanisms does not fundamentally alter the baseline performance regime, justifying our focus on isolating the affine shift parameter.
+
+\begin{table}[!h]
+\caption{Alternative Attention Baselines on Indian Pines (5\% Split)}
+\label{tab:attention_baselines}
+\centering
+\begin{tabular}{lccc}
+\toprule
+\textbf{Model} & \textbf{OA (\%)} & \textbf{AA (\%)} & \textbf{Kappa} \\
+\midrule
+CNN+ECA-Net & 97.36 & 95.97 & 96.99 \\
+CNN+CBAM & 97.41 & 95.98 & 97.05 \\
+CNN+SE-Net & 97.44 & 96.45 & 97.09 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 % ============================================================
 % VII. BASELINE COMPARISON
@@ -530,7 +545,7 @@ With only 5 random seeds, formal significance tests (Wilcoxon, Friedman/Nemenyi)
 
 \subsection{Data Efficiency}
 
-Table~\ref{tab:data_eff} demonstrates the architecture's graceful degradation across reduced training splits (evaluated using the base CNN+SSMRB configuration without AWP/WFA preprocessing to strictly isolate architectural learning capacity). On Indian Pines, reducing the training data from 15\% to 5\% results in only a 1.82\% OA drop, indicating robustness in low-data regimes.
+Table~\ref{tab:data_eff} demonstrates the architecture's graceful degradation across reduced training splits (evaluated using the base CNN+SSMRB configuration without AWP/WFA preprocessing to strictly isolate architectural learning capacity). Direct comparison with Table~\ref{tab:baseline} or overall results is inappropriate because Table~\ref{tab:data_eff} isolates architectural learning capacity whereas the main results evaluate the complete pipeline. On Indian Pines, reducing the training data from 15\% to 5\% results in only a 1.82\% OA drop, indicating robustness in low-data regimes.
 
 \begin{table}[!h]
 \caption{Data Efficiency of Base CNN+SSMRB (OA \%)}
@@ -670,7 +685,7 @@ The Fisher discriminant ratio confirms strong feature separability: 9.73 on Indi
 
 Three findings emerge from this study that we believe are useful to the HSI community:
 
-\textbf{1. The shift parameter $\beta$ is associated with minority-class gains.} The AA$-$OA gap reversal (Table~\ref{tab:aa_oa_gap}) occurs specifically when $\beta$ is added, not with scale-only modulation. The extracted activation distributions (Fig.~\ref{fig:act_dist}) provide mechanistic evidence for this: $\beta$ actively re-centers feature distributions rather than merely compressing them. This suggests that the addition of $\beta$ may compensate for per-channel mean shifts introduced by denoising and spectral variability.
+\textbf{1. The shift parameter $\beta$ is associated with minority-class gains.} The AA$-$OA gap reversal (Table~\ref{tab:aa_oa_gap}) occurs specifically when $\beta$ is added, not with scale-only modulation. The extracted activation distributions (Fig.~\ref{fig:act_dist}) provide preliminary empirical evidence for this: $\beta$ actively re-centers feature distributions rather than merely compressing them. This suggests that the addition of $\beta$ may compensate for per-channel mean shifts introduced by denoising and spectral variability.
 
 \textbf{2. Lightweight modulated CNNs remain competitive.} SMCNN matches transformer accuracy on 2/4 datasets at 16--28$\times$ lower training cost. However, SSFTT substantially outperforms SMCNN on KSC (97.36\% vs. 85.50\%), where 3D tokenization captures multi-scale spectral patterns that 2D convolutions miss. The practical implication: for resource-constrained agricultural applications, modulated CNNs offer a favorable tradeoff; for complex wetland ecosystems, transformers are preferable.
 
