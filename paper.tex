@@ -7,6 +7,7 @@
 \usepackage{xcolor}
 \usepackage{booktabs}
 \usepackage{tabularx}
+\usepackage[T1]{fontenc}
 \usepackage{array}
 \usepackage{float}
 \usepackage{url}
@@ -255,7 +256,7 @@ All experiments use 5\% stratified training split, batch size 64, 100 maximum ep
 % FIX 7: Strengthened leakage prevention description
 \subsection{Data Splitting and Leakage Prevention}
 
-Splits are performed at the \textbf{pixel level before patch extraction}, ensuring no test pixel appears in any training patch. Stratified splitting preserves class distribution. No data augmentation is applied, eliminating a potential leakage source. Patches are centered on labeled pixels only; no sliding window is used. All code is publicly available at \texttt{https://github.com/Devguru-codes/research\_paper\_code} with trained model checkpoints for all 6 datasets $\times$ 5 seeds = 30 models, enabling full reproducibility verification.
+Splits are performed at the \textbf{pixel level before patch extraction}, ensuring no test pixel appears in any training patch. Stratified splitting preserves class distribution. No data augmentation is applied, eliminating a potential leakage source. Patches are centered on labeled pixels only; no sliding window is used. All code is publicly available at \url{https://github.com/Devguru-codes/research_paper_code} with trained model checkpoints for all 6 datasets $\times$ 5 seeds = 30 models, enabling full reproducibility verification.
 
 % ============================================================
 % V. RESULTS
