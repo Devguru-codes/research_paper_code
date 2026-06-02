@@ -61,7 +61,7 @@ Hyperspectral Image Classification, Self-Modulating CNN, Spectral Self-Modulatio
 Hyperspectral imaging captures hundreds of contiguous spectral bands across the electromagnetic spectrum, providing rich spectral signatures that enable fine-grained discrimination between visually similar land cover types. However, HSI classification faces three fundamental challenges:
 
 \begin{enumerate}
-\item \textbf{High dimensionality}: Hundreds of spectral bands create the Hughes phenomenon (curse of dimensionality), where classifier performance degrades as feature space grows faster than available training samples.
+\item \textbf{High dimensionality}: Hundreds of spectral bands create the Hughes phenomenon (curse of dimensionality)~\cite{hughes1968mean}, where classifier performance degrades as feature space grows faster than available training samples.
 \item \textbf{Spectral noise and atmospheric interference}: Sensor noise, atmospheric absorption, and calibration artifacts corrupt spectral signatures, particularly in water-absorption bands.
 \item \textbf{Mixed pixels and spectral variability}: At typical spatial resolutions (1--30~m), individual pixels often contain mixtures of multiple land cover types, and the same material can exhibit significant spectral variation across different conditions.
 \end{enumerate}
@@ -114,11 +114,11 @@ Under our strict 5\% no-pretraining protocol, SMCNN achieves 96.17\% OA on India
 
 \subsection{Traditional and CNN-based HSI Classification}
 
-SVM-based methods by Melgani and Bruzzone~\cite{melgani2004classification} established early spectral classification baselines. Hu et al.~\cite{hu2015deep} introduced 1D-CNN for spectral-only convolutions, while Makantasis et al.~\cite{makantasis2015deep} applied 2D-CNN on PCA-reduced bands. Li et al.~\cite{li2017spectral} proposed 3D-CNN for joint spectral-spatial convolutions, though computationally expensive. Roy et al.~\cite{roy2020hybridsn} introduced HybridSN, a 3D+2D CNN hybrid achieving strong results.
+SVM-based methods by Melgani and Bruzzone~\cite{melgani2004classification} established early spectral classification baselines, building on standard support vector principles~\cite{cortes1995support}. Hu et al.~\cite{hu2015deep} introduced 1D-CNN for spectral-only convolutions, while Makantasis et al.~\cite{makantasis2015deep} applied 2D-CNN on PCA-reduced bands. Li et al.~\cite{li2017spectral} proposed 3D-CNN for joint spectral-spatial convolutions, though computationally expensive. Roy et al.~\cite{roy2020hybridsn} introduced HybridSN, a 3D+2D CNN hybrid achieving strong results.
 
 \subsection{Attention and Modulation Mechanisms}
 
-SE-Net~\cite{hu2018squeeze} introduced channel attention via squeeze-and-excitation (scale only, no shift). CBAM~\cite{woo2018cbam} extended this with sequential channel and spatial attention. FiLM~\cite{perez2018film} introduced feature-wise linear modulation ($\gamma \cdot x + \beta$) for visual question answering. Our SSMRB adapts the FiLM concept to HSI classification with spectral-context-driven self-conditioning combined with residual learning. We explicitly credit the invention of affine modulation to FiLM~\cite{perez2018film}; our contribution lies in (1) applying affine modulation \textit{within} (not after) residual blocks, (2) self-conditioning from the input's own spectral context rather than an external signal, and (3) the first systematic evaluation of this specific configuration under HSI constraints, with empirical evidence (Section~\ref{sec:senet_ablation}) that the shift parameter $\beta$ provides measurable benefits beyond scale-only modulation on complex HSI datasets.
+SE-Net~\cite{hu2018squeeze} introduced channel attention via squeeze-and-excitation (scale only, no shift). CBAM~\cite{woo2018cbam} extended this with sequential channel and spatial attention. ECA-Net~\cite{wang2020eca} proposed efficient 1D convolutions for channel interaction. FiLM~\cite{perez2018film} introduced feature-wise linear modulation ($\gamma \cdot x + \beta$) for visual question answering. Our SSMRB adapts the FiLM concept to HSI classification with spectral-context-driven self-conditioning combined with residual learning. We explicitly credit the invention of affine modulation to FiLM~\cite{perez2018film}; our contribution lies in (1) applying affine modulation \textit{within} (not after) residual blocks, (2) self-conditioning from the input's own spectral context rather than an external signal, and (3) the first systematic evaluation of this specific configuration under HSI constraints, with empirical evidence (Section~\ref{sec:senet_ablation}) that the shift parameter $\beta$ provides measurable benefits beyond scale-only modulation on complex HSI datasets.
 
 \subsection{Transformer and Foundation Models for HSI}
 
@@ -135,15 +135,15 @@ The SMCNN processing pipeline consists of three main stages: (1) Adaptive Spectr
 
 \subsection{Stage 1: Adaptive Spectral Wiener Denoising (AWP)}
 
-AWP removes sensor noise from each spectral band while preserving spectral fidelity. For each spectral band $b$, the 5$\times$5 local Wiener filter estimates local statistics and applies adaptive smoothing:
+AWP removes sensor noise from each spectral band while preserving spectral fidelity. For each spectral band $b$, the 5$\times$5 local Wiener filter~\cite{wiener1949extrapolation} estimates local statistics and applies adaptive smoothing:
 \begin{equation}
 \hat{x}(i,j) = \mu + \frac{\max(0, \sigma^2 - \nu^2)}{\sigma^2} \cdot (x(i,j) - \mu)
 \end{equation}
-where $\mu$ is the local mean, $\sigma^2$ is the local variance, and $\nu^2$ is the estimated noise variance. This adapts smoothing based on local signal-to-noise ratio: high-variance (feature-rich) regions are preserved while low-variance (noise-dominated) regions are smoothed. Unlike BM3D or deep denoising, the Wiener filter requires no training data and adds negligible computational cost ($<$0.1s per dataset).
+where $\mu$ is the local mean, $\sigma^2$ is the local variance, and $\nu^2$ is the estimated noise variance. This adapts smoothing based on local signal-to-noise ratio: high-variance (feature-rich) regions are preserved while low-variance (noise-dominated) regions are smoothed. Unlike BM3D~\cite{dabov2007image} or deep denoising, the Wiener filter requires no training data and adds negligible computational cost ($<$0.1s per dataset).
 
 \subsection{Stage 2: Wavelet Spectral Augmentation (WFA)}
 
-WFA extracts multi-scale spectral features via 2D Discrete Wavelet Transform using the Daubechies-4 (db4) mother wavelet. For each spectral band $b$:
+WFA extracts multi-scale spectral features via 2D Discrete Wavelet Transform using the Daubechies-4 (db4) mother wavelet~\cite{daubechies1992ten}. For each spectral band $b$:
 \begin{equation}
 [\text{LL}_b, (\text{LH}_b, \text{HL}_b, \text{HH}_b)] = \text{DWT}_{2\text{D}}(x(:,:,b), \psi_{\text{db4}})
 \end{equation}
@@ -227,7 +227,7 @@ A scale-only mechanism (SE-Net) can suppress noisy bands ($\gamma \to 0$) and am
 
 \subsection{Datasets}
 
-We evaluate on six benchmark HSI datasets spanning four sensors and spatial resolutions from 0.109~m to 30~m, as summarized in Table~\ref{tab:datasets}.
+We evaluate on six benchmark HSI datasets spanning four sensors and spatial resolutions from 0.109~m to 30~m: Indian Pines~\cite{baumgardner2015indian}, Pavia University~\cite{gamba2004pavia}, WHU-Hi HanChuan~\cite{zhong2020whu}, Salinas, Botswana, and KSC~\cite{gic2020hyperspectral}. Details are summarized in Table~\ref{tab:datasets}.
 
 \begin{table}[!t]
 \caption{Benchmark HSI Datasets}
@@ -250,7 +250,7 @@ WHU-Hi & Headwall & 1217$\times$303 & 274 & 16 & 257,530 & 0.109 m \\
 
 \subsection{Training Protocol}
 
-All experiments use 5\% stratified training split, batch size 64, 100 maximum epochs with early stopping (patience=20), AdamW optimizer with base learning rate 0.001, weight decay $10^{-4}$, dropout 0.4, CrossEntropyLoss, and 15$\times$15 patch size. Experiments are repeated with 5 random seeds $\{42, 100, 200, 300, 2024\}$. All training is performed on an NVIDIA Tesla T4 GPU with PyTorch 2.x.
+All experiments use 5\% stratified training split, batch size 64, 100 maximum epochs with early stopping (patience=20), AdamW optimizer~\cite{loshchilov2019decoupled} with base learning rate 0.001, weight decay $10^{-4}$, dropout 0.4~\cite{srivastava2014dropout}, CrossEntropyLoss, and 15$\times$15 patch size. Experiments are repeated with 5 random seeds $\{42, 100, 200, 300, 2024\}$. All training is performed on an NVIDIA Tesla T4 GPU with PyTorch 2.x~\cite{paszke2019pytorch}.
 
 % FIX 7: Strengthened leakage prevention description
 \subsection{Data Splitting and Leakage Prevention}
@@ -515,7 +515,7 @@ WHU-Hi & [99.40, 99.72] & [0.9929, 0.9967] \\
 
 \subsection{Practical Significance}
 
-Given the small sample size ($n=5$ seeds), we report \textbf{absolute differences} rather than formal effect sizes. The 5-seed limitation prevents the use of robust non-parametric tests (e.g., Wilcoxon signed-rank or Friedman tests), which require larger sample sizes to achieve adequate statistical power. Thus, Cohen's $d$ estimates are unreliable at this sample size:
+Given the small sample size ($n=5$ seeds), we report \textbf{absolute differences} rather than formal effect sizes. The 5-seed limitation prevents the use of robust non-parametric tests (e.g., Wilcoxon signed-rank~\cite{wilcoxon1945individual} or Friedman tests~\cite{friedman1937use}), which require larger sample sizes to achieve adequate statistical power. Thus, Cohen's $d$ estimates~\cite{cohen1988statistical} are unreliable at this sample size:
 
 \begin{itemize}
 \item \textbf{SSMRB vs. SE-Net}: +0.30\% OA, +2.77\% AA on Indian Pines; +0.35\% OA, +1.23\% AA on Pavia University. The AA improvement consistently exceeds the OA improvement.
@@ -651,7 +651,7 @@ Furthermore, the per-class mean $\gamma$ (scale) and $\beta$ (shift) values reve
 
 \subsection{t-SNE Feature Visualization and Grad-CAM}
 
-64-dimensional feature vectors from the GAP layer are projected to 2D via t-SNE (perplexity=30, 1000 iterations). Fig.~\ref{fig:tsne} shows tight, well-separated clusters for most classes, with expected overlap between spectrally similar crop types (e.g., Corn variants). Fig.~\ref{fig:gradcam} shows Grad-CAM visualizations confirming the model focuses on patch centers and immediate neighborhoods rather than border artifacts.
+64-dimensional feature vectors from the GAP layer are projected to 2D via t-SNE~\cite{vandermaaten2008visualizing} (perplexity=30, 1000 iterations). Fig.~\ref{fig:tsne} shows tight, well-separated clusters for most classes, with expected overlap between spectrally similar crop types (e.g., Corn variants). Fig.~\ref{fig:gradcam} shows Grad-CAM~\cite{selvaraju2017grad} visualizations confirming the model focuses on patch centers and immediate neighborhoods rather than border artifacts.
 
 \subsection{Classification Maps}
 
@@ -761,6 +761,60 @@ L.~N.~Smith, ``Cyclical learning rates for training neural networks,'' in \texti
 
 \bibitem{ruan2021gaussian}
 D.~Ruan, D.~Yan, S.~Lai, Z.~Chai, C.~Shen, and H.~Wang, ``Gaussian context transformer,'' in \textit{Proc. IEEE CVPR}, 2021, pp.~15129--15138.
+
+\bibitem{hughes1968mean}
+G.~Hughes, ``On the mean accuracy of statistical pattern recognizers,'' \textit{IEEE Trans. Inf. Theory}, vol.~14, no.~1, pp.~55--63, 1968.
+
+\bibitem{cortes1995support}
+C.~Cortes and V.~Vapnik, ``Support-vector networks,'' \textit{Mach. Learn.}, vol.~20, pp.~273--297, 1995.
+
+\bibitem{wang2020eca}
+Q.~Wang, B.~Wu, P.~Zhu, P.~Li, W.~Zuo, and Q.~Hu, ``ECA-Net: Efficient channel attention for deep convolutional neural networks,'' in \textit{Proc. IEEE CVPR}, 2020, pp.~11534--11542.
+
+\bibitem{wiener1949extrapolation}
+N.~Wiener, \textit{Extrapolation, Interpolation, and Smoothing of Stationary Time Series}. New York: Wiley, 1949.
+
+\bibitem{dabov2007image}
+K.~Dabov, A.~Foi, V.~Katkovnik, and K.~Egiazarian, ``Image denoising by sparse 3-D transform-domain collaborative filtering,'' \textit{IEEE Trans. Image Process.}, vol.~16, no.~8, pp.~2080--2095, 2007.
+
+\bibitem{daubechies1992ten}
+I.~Daubechies, \textit{Ten Lectures on Wavelets}. Philadelphia: SIAM, 1992.
+
+\bibitem{baumgardner2015indian}
+M.~F.~Baumgardner et al., ``220 band AVIRIS hyperspectral image data set: June 12, 1992 Indian Pine Test Site 3,'' Purdue Univ. Res. Rep., 2015.
+
+\bibitem{gamba2004pavia}
+P.~Gamba, ``A collection of data for urban area characterization,'' in \textit{Proc. IEEE IGARSS}, 2004, pp.~69--72.
+
+\bibitem{zhong2020whu}
+Y.~Zhong, X.~Hu, C.~Luo, X.~Wang, J.~Zhao, and L.~Zhang, ``WHU-Hi: UAV-borne hyperspectral with high spatial resolution (H2) benchmark datasets and classifier for precision agriculture,'' \textit{Remote Sens. Environ.}, vol.~250, p.~112012, 2020.
+
+\bibitem{gic2020hyperspectral}
+Grupo de Inteligencia Computacional (GIC), ``Hyperspectral Remote Sensing Scenes.'' [Online]. Available: http://www.ehu.eus/ccwintco/index.php/Hyperspectral\_Remote\_Sensing\_Scenes. [Accessed: 2026-06-02].
+
+\bibitem{paszke2019pytorch}
+A.~Paszke et al., ``PyTorch: An imperative style, high-performance deep learning library,'' in \textit{Adv. Neural Inf. Process. Syst.}, 2019, pp.~8024--8035.
+
+\bibitem{loshchilov2019decoupled}
+I.~Loshchilov and F.~Hutter, ``Decoupled weight decay regularization,'' in \textit{Proc. ICLR}, 2019.
+
+\bibitem{srivastava2014dropout}
+N.~Srivastava, G.~Hinton, A.~Krizhevsky, I.~Sutskever, and R.~Salakhutdinov, ``Dropout: A simple way to prevent neural networks from overfitting,'' \textit{J. Mach. Learn. Res.}, vol.~15, pp.~1929--1958, 2014.
+
+\bibitem{vandermaaten2008visualizing}
+L.~van der Maaten and G.~Hinton, ``Visualizing data using t-SNE,'' \textit{J. Mach. Learn. Res.}, vol.~9, pp.~2579--2605, 2008.
+
+\bibitem{selvaraju2017grad}
+R.~R.~Selvaraju, M.~Cogswell, A.~Das, R.~Vedantam, D.~Parikh, and D.~Batra, ``Grad-CAM: Visual explanations from deep networks via gradient-based localization,'' in \textit{Proc. IEEE ICCV}, 2017, pp.~618--626.
+
+\bibitem{wilcoxon1945individual}
+F.~Wilcoxon, ``Individual comparisons by ranking methods,'' \textit{Biometrics Bull.}, vol.~1, no.~6, pp.~80--83, 1945.
+
+\bibitem{friedman1937use}
+M.~Friedman, ``The use of ranks to avoid the assumption of normality implicit in the analysis of variance,'' \textit{J. Am. Stat. Assoc.}, vol.~32, no.~200, pp.~675--701, 1937.
+
+\bibitem{cohen1988statistical}
+J.~Cohen, \textit{Statistical Power Analysis for the Behavioral Sciences}, 2nd ed. Hillsdale, NJ: Erlbaum, 1988.
 
 \end{thebibliography}
 
