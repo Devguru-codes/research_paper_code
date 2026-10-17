@@ -1,0 +1,13 @@
+\begin{tabular}{lrrrrr}
+\toprule
+Method & Params (M) & MMACs$^{a}$ & Latency (ms)$^{b}$ & Train IP (s) & Train PU (s) \\
+\midrule
+Plain CNN & 0.184 & 41.2 & 0.69 & 4.4 & 17.6 \\
+SE ($\gamma$) & 0.188 & 41.2 & 1.17 & 4.6 & 19.3 \\
+FC ($\gamma{+}\beta$) & 0.190 & 41.2 & 1.31 & 4.7 & 19.8 \\
+SNSM ($\gamma$) & 0.184 & 41.3 & 2.54 & 7.5 & 29.5 \\
+SNSM ($\gamma{+}\beta$) & 0.184 & 41.3 & 2.54 & 7.6 & 30.2 \\
+HybridSN & 1.743 & 137.4 & 0.71 & 26.2 & 115.3 \\
+SSFTT & 0.291 & 34.9 & 1.25 & 7.6 & -- \\
+\bottomrule
+\end{tabular}
