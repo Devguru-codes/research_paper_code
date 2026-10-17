@@ -5,6 +5,8 @@ IndianPines,FC: gamma+beta vs gamma only,OA,0.006,0.232,1/5,-0.17 +0.41 -0.04 -0
 IndianPines,FC: gamma+beta vs gamma only,AA,3.022,1.61,5/5,+5.88 +2.31 +2.14 +2.63 +2.16
 IndianPines,SNSM gamma+beta vs FC gamma+beta,OA,0.055,0.271,2/5,+0.45 -0.27 +0.17 -0.06 -0.02
 IndianPines,SNSM gamma+beta vs FC gamma+beta,AA,1.654,1.446,5/5,+2.87 +0.15 +3.29 +1.69 +0.27
+IndianPines,SNSM gamma only vs ECA gamma only,OA,0.027,0.315,2/5,+0.55 -0.19 -0.24 +0.01 +0.00
+IndianPines,SNSM gamma only vs ECA gamma only,AA,2.405,2.78,4/5,+7.08 +2.15 +1.62 +1.52 -0.35
 IndianPines,SNSM gamma+beta vs plain,OA,0.33,0.329,4/5,+0.63 +0.74 +0.13 +0.15 +0.00
 IndianPines,SNSM gamma+beta vs plain,AA,6.298,2.144,5/5,+6.35 +8.20 +6.71 +7.54 +2.69
 PaviaU,SNSM: gamma+beta vs gamma only,OA,-0.017,0.03,2/5,+0.00 -0.05 +0.02 -0.03 -0.02
@@ -13,6 +15,8 @@ PaviaU,FC: gamma+beta vs gamma only,OA,-0.019,0.138,1/5,-0.01 -0.07 -0.15 -0.07 
 PaviaU,FC: gamma+beta vs gamma only,AA,0.088,0.525,1/5,-0.05 -0.07 -0.20 -0.27 +1.01
 PaviaU,SNSM gamma+beta vs FC gamma+beta,OA,-0.036,0.043,0/5,-0.05 -0.02 -0.00 -0.10 +0.00
 PaviaU,SNSM gamma+beta vs FC gamma+beta,AA,0.049,0.125,3/5,+0.02 -0.05 -0.03 +0.04 +0.26
+PaviaU,SNSM gamma only vs ECA gamma only,OA,-0.086,0.07,0/5,-0.10 -0.05 -0.20 -0.01 -0.06
+PaviaU,SNSM gamma only vs ECA gamma only,AA,-0.09,0.119,2/5,-0.15 -0.16 -0.21 +0.00 +0.07
 PaviaU,SNSM gamma+beta vs plain,OA,-0.12,0.026,0/5,-0.10 -0.15 -0.14 -0.12 -0.09
 PaviaU,SNSM gamma+beta vs plain,AA,-0.079,0.151,2/5,-0.14 -0.26 -0.13 +0.01 +0.13
 KSC,SNSM: gamma+beta vs gamma only,OA,0.065,1.224,2/5,-1.39 -0.10 -0.34 +0.18 +1.98
@@ -21,6 +25,8 @@ KSC,FC: gamma+beta vs gamma only,OA,-7.233,8.086,0/5,-3.73 -7.43 -0.89 -21.07 -3
 KSC,FC: gamma+beta vs gamma only,AA,-10.072,8.104,0/5,-5.51 -12.85 -5.59 -23.07 -3.35
 KSC,SNSM gamma+beta vs FC gamma+beta,OA,10.244,6.816,5/5,+2.60 +10.90 +11.52 +20.48 +5.71
 KSC,SNSM gamma+beta vs FC gamma+beta,AA,15.0,8.403,5/5,+4.12 +18.74 +21.70 +22.47 +7.97
+KSC,SNSM gamma only vs ECA gamma only,OA,6.063,6.949,5/5,+0.22 +16.75 +9.14 +3.49 +0.71
+KSC,SNSM gamma only vs ECA gamma only,AA,7.906,10.266,3/5,-0.57 +22.75 +14.26 +3.56 -0.47
 KSC,SNSM gamma+beta vs plain,OA,3.621,6.322,3/5,-1.76 +3.49 +14.35 +2.06 -0.04
 KSC,SNSM gamma+beta vs plain,AA,6.605,12.019,4/5,-2.64 +5.12 +27.48 +2.74 +0.32
 Botswana,SNSM: gamma+beta vs gamma only,OA,-0.058,0.164,1/5,-0.10 +0.19 -0.16 -0.23 +0.00
@@ -29,5 +35,7 @@ Botswana,FC: gamma+beta vs gamma only,OA,-0.142,0.213,1/5,-0.03 -0.49 -0.06 +0.0
 Botswana,FC: gamma+beta vs gamma only,AA,-0.132,0.198,1/5,-0.02 -0.43 -0.08 +0.08 -0.21
 Botswana,SNSM gamma+beta vs FC gamma+beta,OA,0.239,0.39,3/5,-0.16 +0.45 +0.78 +0.23 -0.10
 Botswana,SNSM gamma+beta vs FC gamma+beta,AA,0.223,0.334,3/5,-0.14 +0.40 +0.69 +0.21 -0.04
+Botswana,SNSM gamma only vs ECA gamma only,OA,-0.032,0.179,2/5,-0.10 -0.29 +0.03 +0.19 +0.00
+Botswana,SNSM gamma only vs ECA gamma only,AA,-0.015,0.169,2/5,-0.08 -0.26 +0.07 +0.19 +0.00
 Botswana,SNSM gamma+beta vs plain,OA,-0.052,0.22,1/5,-0.10 +0.29 -0.06 -0.32 -0.06
 Botswana,SNSM gamma+beta vs plain,AA,-0.015,0.193,2/5,-0.08 +0.26 +0.05 -0.26 -0.05

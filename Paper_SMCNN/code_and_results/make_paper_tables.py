@@ -13,7 +13,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 FINAL = os.path.join(HERE, 'final')
 OUT = os.path.join(HERE, '..', 'paper', 'rsl', 'tables')
 
-LABELS = {'plain': 'Plain CNN', 'se_gamma': r'SE ($\gamma$)', 'fc_gamma_beta': r'FC ($\gamma{+}\beta$)',
+LABELS = {'plain': 'Plain CNN', 'se_gamma': r'SE ($\gamma$)', 'eca_gamma': r'ECA ($\gamma$)', 'fc_gamma_beta': r'FC ($\gamma{+}\beta$)',
           'snsm_gamma': r'SNSM ($\gamma$)', 'snsm': r'SNSM ($\gamma{+}\beta$)',
           'hybridsn': 'HybridSN', 'ssftt': 'SSFTT'}
 SHORT = {'IndianPines': 'IP', 'KSC': 'KSC', 'PaviaU': 'PU', 'Botswana': 'BW'}
@@ -59,6 +59,7 @@ write('main.tex', lines)
 pairs = [('snsm', 'snsm_gamma', r'SNSM ($\gamma{+}\beta$) $-$ SNSM ($\gamma$)'),
          ('fc_gamma_beta', 'se_gamma', r'FC ($\gamma{+}\beta$) $-$ SE ($\gamma$)'),
          ('snsm_gamma', 'se_gamma', r'SNSM ($\gamma$) $-$ SE ($\gamma$)'),
+         ('snsm_gamma', 'eca_gamma', r'SNSM ($\gamma$) $-$ ECA ($\gamma$)'),
          ('snsm', 'plain', r'SNSM ($\gamma{+}\beta$) $-$ Plain CNN')]
 lines = [r'\begin{tabular}{l' + 'c' * len(CORE) + '}', r'\toprule',
          r'$\Delta$AA (wins/5) & ' + ' & '.join(SHORT[d] for d in CORE) + r' \\', r'\midrule']
