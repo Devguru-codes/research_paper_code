@@ -1,0 +1,10 @@
+class,labelled_pixels,Plain CNN,SE (gamma only),FC gamma+beta (old SSMRB),SNSM gamma only,SNSM gamma+beta (ours),HybridSN
+Asphalt,6631,99.95,99.73,99.77,99.83,99.81,99.14
+Meadows,18649,99.99,99.97,99.98,99.96,99.94,99.95
+Gravel,2099,99.59,99.76,99.14,99.02,99.12,86.2
+Trees,3064,97.04,97.31,97.07,96.76,96.6,95.82
+Painted metal sheets,1345,99.84,99.94,99.72,99.78,99.8,99.14
+Bare Soil,5029,99.97,99.97,99.98,99.98,100.0,99.78
+Bitumen,1330,99.95,100.0,100.0,99.98,99.94,91.69
+Self-Blocking Bricks,3682,99.41,99.39,99.11,99.01,98.93,93.17
+Shadows,947,95.36,93.09,95.18,95.87,96.27,94.24
