@@ -10,6 +10,7 @@ Code, results and manuscript for the Remote Sensing Letters submission
 | `notebooks/phase1_final_experiments.ipynb` | The one notebook behind every number in the paper |
 | `code_and_results/final/` | Merged results: `runs.csv` (one row per training run), `efficiency.csv`, tables, classification map |
 | `code_and_results/make_paper_tables.py` | Writes the paper's LaTeX tables and inline numbers from `final/*.csv` |
+| `code_and_results/make_paper_figures.py` | Draws the paper's data figures from `final/*.csv` |
 | `paper/rsl/` | Manuscript in the Taylor & Francis Interact template (`snsm_rsl.tex`, `refs.bib`, `snsm_rsl.pdf`) |
 
 ## Protocol
@@ -32,7 +33,7 @@ Datasets: Indian Pines, Pavia University, KSC, Botswana (all models); Salinas an
 2. Put the merged CSVs in `code_and_results/final/`, then rebuild the tables and the paper:
 
 ```bash
-python code_and_results/make_paper_tables.py
+python code_and_results/make_paper_tables.py && python code_and_results/make_paper_figures.py
 ```
 
 ```bash

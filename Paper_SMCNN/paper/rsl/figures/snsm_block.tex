@@ -1,0 +1,21 @@
+% SNSM modulation inside a residual block (TikZ; included from snsm_rsl.tex).
+\begin{tikzpicture}[
+  font=\footnotesize, node distance=4mm and 5mm,
+  box/.style={draw=black!70, rounded corners=2pt, align=center, minimum height=11mm, inner sep=3pt},
+  op/.style={box, fill=blue!8},
+  arr/.style={-{Stealth[length=2mm]}, black!70}]
+\node[box] (h) {$\mathbf{h}\in\mathbb{R}^{C\times H\times W}$\\[1pt]\scriptsize Conv--BN--ReLU};
+\node[op, right=of h] (d) {Per-channel descriptors\\[1pt]$\mu_c,\; v_c,\; g_c$\\[1pt]\scriptsize standardised over $c$};
+\node[op, right=14mm of d] (c1) {Conv1D $3\!\to\!8$\\[1pt]\scriptsize $k{=}3$, $d{=}2$, ReLU};
+\node[op, right=of c1] (c2) {Conv1D $8\!\to\!2$\\[1pt]\scriptsize $k{=}3$, zero init};
+\node[op, below=7mm of c2] (gb) {$\gamma_c=1+\tfrac12\tanh Z_{1,c}$\\[1pt]$\beta_c=Z_{2,c}$};
+\node[box, left=of gb, fill=blue!18] (m) {$\gamma_c\,\mathbf{h}_c+\beta_c$};
+\node[box, below=5mm of m] (out) {Conv--BN, $+\mathbf{x}$, ReLU};
+\draw[arr] (h) -- (d);
+\draw[arr] (d) -- node[above]{\scriptsize $\mathbf{S}\in\mathbb{R}^{3\times C}$} (c1);
+\draw[arr] (c1) -- (c2);
+\draw[arr] (c2) -- node[right]{\scriptsize $\mathbf{Z}\in\mathbb{R}^{2\times C}$} (gb);
+\draw[arr] (gb) -- (m);
+\draw[arr] (h.south) |- ([yshift=2mm]m.west) ;
+\draw[arr] (m) -- (out);
+\end{tikzpicture}

@@ -87,6 +87,43 @@ for m in LABELS:
 lines += [r'\bottomrule', r'\end{tabular}']
 write('efficiency.tex', lines)
 
+# Table: datasets. Sensor, band count and ground sample distance are the published
+# scene properties; size, classes and labelled pixels are read from the ground truth.
+SCENES = [('IndianPines', 'Indian Pines (IP)', 'AVIRIS', 200, '20'),
+          ('PaviaU', 'Pavia University (PU)', 'ROSIS', 103, '1.3'),
+          ('KSC', 'Kennedy Space Center (KSC)', 'AVIRIS', 176, '18'),
+          ('Botswana', 'Botswana (BW)', 'Hyperion', 145, '30'),
+          ('Salinas', 'Salinas', 'AVIRIS', 204, '3.7'),
+          ('WHU_Hi_HanChuan', 'WHU-Hi HanChuan', 'Headwall Nano-Hyperspec', 274, '0.109')]
+lines = [r'\begin{tabular}{llrrrrrr}', r'\toprule',
+         r'Scene & Sensor & Size (pixels) & Bands & GSD (m) & Classes & Labelled & Train/test \\', r'\midrule']
+for key, name, sensor, bands, gsd in SCENES:
+    gt = np.load(os.path.join(FINAL, f'_gt_{key}.npy'))
+    n = runs[runs.dataset == key].iloc[0]
+    lines.append(f'{name} & {sensor} & ${gt.shape[0]}\\times{gt.shape[1]}$ & {bands} & {gsd} & '
+                 f'{int(gt.max())} & {int((gt > 0).sum()):,} & {int(n.n_train):,}/{int(n.n_test):,} \\\\')
+lines += [r'\bottomrule', r'\end{tabular}']
+write('datasets.tex', lines)
+
+# Table: per-class accuracy on Indian Pines (mean over seeds), best per row in bold
+PC_MODELS = ['plain', 'se_gamma', 'eca_gamma', 'cbam', 'snsm_gamma', 'snsm', 'hybridsn', 'ssftt']
+names = pd.read_csv(os.path.join(FINAL, 'table_per_class_IndianPines.csv'))[['class', 'labelled_pixels']]
+pcm = {}
+for m in PC_MODELS:
+    sub = runs[(runs.dataset == 'IndianPines') & (runs.model == m)]
+    arr = np.array([[np.nan if a is None else a for a in json.loads(p)] for p in sub.per_class], dtype=float)
+    pcm[m] = np.nanmean(arr, axis=0)
+lines = [r'\begin{tabular}{lr' + 'r' * len(PC_MODELS) + '}', r'\toprule',
+         'Class & $n$ & ' + ' & '.join(LABELS[m] for m in PC_MODELS) + r' \\', r'\midrule']
+for i, row in names.iterrows():
+    vals = [pcm[m][i] for m in PC_MODELS]
+    top = max(vals)
+    cells = [f'\\textbf{{{v:.1f}}}' if np.isclose(v, top) else f'{v:.1f}' for v in vals]
+    lines.append(f"{row['class']} & {row['labelled_pixels']} & " + ' & '.join(cells) + r' \\')
+lines += [r'\midrule', 'AA & & ' + ' & '.join(f'{np.mean(pcm[m]):.1f}' for m in PC_MODELS) + r' \\',
+          r'\bottomrule', r'\end{tabular}']
+write('perclass_ip.tex', lines)
+
 # Inline numbers used in the text (as \newcommand macros)
 def mac(name, value):
     return f'\\newcommand{{\\{name}}}{{{value}}}'
