@@ -35,7 +35,7 @@ def save(fig, name):
 
 
 # Figure: paired same-seed AA differences (dots = seeds, bar = mean)
-PAIRS = [('snsm', 'snsm_gamma', r'SNSM: $\gamma$+$\beta$ $-$ $\gamma$ only'),
+PAIRS = [('snsm', 'snsm_gamma', r'SNSM ($\gamma$+$\beta$) $-$ SNSM ($\gamma$)'),
          ('snsm_gamma', 'se_gamma', r'SNSM ($\gamma$) $-$ SE ($\gamma$)'),
          ('snsm_gamma', 'eca_gamma', r'SNSM ($\gamma$) $-$ ECA ($\gamma$)'),
          ('snsm', 'cbam', r'SNSM ($\gamma$+$\beta$) $-$ CBAM'),
