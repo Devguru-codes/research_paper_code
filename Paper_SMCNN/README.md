@@ -14,8 +14,9 @@ Paper_SMCNN/
 │   ├── tables/                         generated LaTeX tables and inline numbers
 │   └── figures/                        generated figures + SNSM block diagram (TikZ)
 ├── experiments/
-│   ├── phase1_final_experiments.ipynb  the one notebook behind every result in the paper
-│   ├── results/                        merged results: runs.csv (one row per run), efficiency.csv, map
+│   ├── phase1_final_experiments.ipynb  main comparison at 5% labels (Tables 2-3, 6-7)
+│   ├── phase2_ablation_budget.ipynb    descriptor ablation and 1%/10% label budget (Tables 4-5)
+│   ├── results/                        runs.csv and phase2_runs.csv (one row per run), efficiency.csv, map
 │   ├── make_paper_tables.py            writes paper/tables/ from results/
 │   └── make_paper_figures.py           writes paper/figures/ from results/
 └── archive/                            earlier experiments (superseded; kept for history)
@@ -38,6 +39,7 @@ Datasets: Indian Pines, Pavia University, KSC, Botswana (all models); Salinas an
 
 1. On Kaggle, import `experiments/phase1_final_experiments.ipynb`, add the `devgurucodes/datasets-hsi-all` dataset as input, choose GPU T4, then *Save & Run All*.
    The notebook writes everything to `/kaggle/working/final/`. To use two GPUs, run copies with different `CORE_DATASETS`/`LARGE_DATASETS` lists and concatenate their `runs.csv` and `efficiency.csv`.
+   Run `experiments/phase2_ablation_budget.ipynb` the same way (one T4, about 15 minutes of training); it writes `/kaggle/working/phase2/runs.csv`, which goes to `experiments/results/phase2_runs.csv`.
 2. Put the merged CSVs in `experiments/results/`, then rebuild the tables, figures and paper:
 
 ```bash

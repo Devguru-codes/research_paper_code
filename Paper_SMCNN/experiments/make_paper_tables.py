@@ -141,4 +141,55 @@ hyb = runs[(runs.dataset == 'Botswana') & (runs.model == 'hybridsn')].OA
 macros.append(mac('hybridBWmin', f'{hyb.min():.1f}'))
 write('numbers.tex', macros)
 
+# Phase 2 (phase2_ablation_budget.ipynb): descriptor ablation and label budget
+p2 = pd.read_csv(os.path.join(FINAL, 'phase2_runs.csv'))
+HARD = ['IndianPines', 'KSC']
+
+
+def aa(df, ds, m):
+    return df[(df.dataset == ds) & (df.model == m)].set_index('seed').AA
+
+
+ABL = [('snsm', 'mean, var, grad (SNSM)'), ('snsm_mean', 'mean'), ('snsm_mean_var', 'mean, var'),
+       ('snsm_mean_grad', 'mean, grad'), ('snsm_noinit', r'mean, var, grad; default init.')]
+abl = p2[p2.study == 'ablation']
+lines = [r'\begin{tabular}{l' + 'cc' * len(HARD) + '}', r'\toprule',
+         'Descriptors & ' + ' & '.join(f'\\multicolumn{{2}}{{c}}{{{SHORT[d]}}}' for d in HARD) + r' \\',
+         ' & ' + ' & '.join([r'AA & $\Delta$AA (wins/5)'] * len(HARD)) + r' \\', r'\midrule']
+for m, label in ABL:
+    cells = []
+    for d in HARD:
+        v, ref = aa(abl, d, m), aa(abl, d, 'snsm')
+        cells.append(f'{v.mean():.2f}$\\pm${v.std(ddof=1):.2f}')
+        diff = (v - ref).dropna()
+        cells.append('--' if m == 'snsm' else f'{diff.mean():+.2f} ({int((diff > 0).sum())}/{len(diff)})')
+    lines.append(label + ' & ' + ' & '.join(cells) + r' \\')
+lines += [r'\bottomrule', r'\end{tabular}']
+write('ablation.tex', lines)
+
+BUDGET = ['plain', 'se_gamma', 'eca_gamma', 'cbam', 'snsm', 'ssftt']
+RATIOS = [0.01, 0.05, 0.10]
+
+
+def budget_aa(ds, m, r):
+    # 5% comes from Phase 1 (same splits and code); 1% and 10% from Phase 2
+    df = runs if np.isclose(r, 0.05) else p2[(p2.study == 'budget') & np.isclose(p2.ratio, r)]
+    return aa(df, ds, m)
+
+
+lines = [r'\begin{tabular}{l' + 'c' * (len(HARD) * len(RATIOS)) + '}', r'\toprule',
+         'Method & ' + ' & '.join(f'\\multicolumn{{{len(RATIOS)}}}{{c}}{{{SHORT[d]}}}' for d in HARD) + r' \\',
+         ' & ' + ' & '.join(f'{int(r * 100)}\\%' for _ in HARD for r in RATIOS) + r' \\', r'\midrule']
+top = {(d, r): max(budget_aa(d, m, r).mean() for m in BUDGET) for d in HARD for r in RATIOS}
+for m in BUDGET:
+    cells = []
+    for d in HARD:
+        for r in RATIOS:
+            v = budget_aa(d, m, r)
+            txt = f'{v.mean():.2f}$\\pm${v.std(ddof=1):.2f}'
+            cells.append(f'\\textbf{{{txt}}}' if np.isclose(v.mean(), top[(d, r)]) else txt)
+    lines.append(LABELS[m] + ' & ' + ' & '.join(cells) + r' \\')
+lines += [r'\bottomrule', r'\end{tabular}']
+write('budget.tex', lines)
+
 print('Wrote', sorted(os.listdir(OUT)))
