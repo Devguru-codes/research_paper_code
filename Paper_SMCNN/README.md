@@ -26,6 +26,7 @@ Paper_SMCNN/
 
 Every model uses the same inputs, splits and schedule:
 
+- KSC is read as int16: the distributed file is uint16 but holds small negative values (−27…−1) that otherwise wrap to 65509…65535
 - Wiener 5×5 per band → PCA (30 components, fitted on the whole scene without labels) → + db4 wavelet approximation = 60 features
 - 15×15 patches; 5% of labelled pixels per class for training, the rest for testing (capped at 50,000 for Salinas and WHU-Hi)
 - Seeds 42–46; AdamW (lr 1e-3, weight decay 1e-4), StepLR (×0.5 every 40 epochs), batch 64, **exactly 100 epochs**

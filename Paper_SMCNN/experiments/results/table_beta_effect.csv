@@ -23,18 +23,18 @@ PaviaU,SNSM gamma+beta vs CBAM,OA,-0.109,0.057,0/5,-0.04 -0.12 -0.08 -0.20 -0.11
 PaviaU,SNSM gamma+beta vs CBAM,AA,-0.177,0.147,1/5,-0.10 -0.20 -0.25 -0.36 +0.03
 PaviaU,SNSM gamma+beta vs plain,OA,-0.12,0.026,0/5,-0.10 -0.15 -0.14 -0.12 -0.09
 PaviaU,SNSM gamma+beta vs plain,AA,-0.079,0.151,2/5,-0.14 -0.26 -0.13 +0.01 +0.13
-KSC,SNSM: gamma+beta vs gamma only,OA,0.065,1.224,2/5,-1.39 -0.10 -0.34 +0.18 +1.98
-KSC,SNSM: gamma+beta vs gamma only,AA,0.617,1.802,3/5,-1.43 -0.39 +0.16 +1.53 +3.22
-KSC,FC: gamma+beta vs gamma only,OA,-7.233,8.086,0/5,-3.73 -7.43 -0.89 -21.07 -3.05
-KSC,FC: gamma+beta vs gamma only,AA,-10.072,8.104,0/5,-5.51 -12.85 -5.59 -23.07 -3.35
-KSC,SNSM gamma+beta vs FC gamma+beta,OA,10.244,6.816,5/5,+2.60 +10.90 +11.52 +20.48 +5.71
-KSC,SNSM gamma+beta vs FC gamma+beta,AA,15.0,8.403,5/5,+4.12 +18.74 +21.70 +22.47 +7.97
-KSC,SNSM gamma only vs ECA gamma only,OA,6.063,6.949,5/5,+0.22 +16.75 +9.14 +3.49 +0.71
-KSC,SNSM gamma only vs ECA gamma only,AA,7.906,10.266,3/5,-0.57 +22.75 +14.26 +3.56 -0.47
-KSC,SNSM gamma+beta vs CBAM,OA,2.438,1.424,5/5,+4.22 +1.92 +0.36 +2.72 +2.97
-KSC,SNSM gamma+beta vs CBAM,AA,3.248,2.055,5/5,+6.40 +3.21 +0.70 +3.38 +2.55
-KSC,SNSM gamma+beta vs plain,OA,3.621,6.322,3/5,-1.76 +3.49 +14.35 +2.06 -0.04
-KSC,SNSM gamma+beta vs plain,AA,6.605,12.019,4/5,-2.64 +5.12 +27.48 +2.74 +0.32
+KSC,SNSM: gamma+beta vs gamma only,OA,-0.061,0.461,3/5,+0.02 +0.00 -0.81 +0.02 +0.46
+KSC,SNSM: gamma+beta vs gamma only,AA,-0.052,0.648,3/5,+0.03 +0.00 -1.06 +0.02 +0.75
+KSC,FC: gamma+beta vs gamma only,OA,0.02,0.245,3/5,+0.28 +0.14 -0.34 -0.10 +0.12
+KSC,FC: gamma+beta vs gamma only,AA,0.054,0.301,3/5,+0.22 +0.37 -0.36 -0.16 +0.20
+KSC,SNSM gamma+beta vs FC gamma+beta,OA,-0.004,0.231,3/5,+0.04 -0.04 -0.34 +0.02 +0.30
+KSC,SNSM gamma+beta vs FC gamma+beta,AA,-0.026,0.397,3/5,+0.08 -0.12 -0.61 +0.03 +0.49
+KSC,SNSM gamma only vs ECA gamma only,OA,0.077,0.345,2/5,-0.12 -0.02 +0.65 +0.12 -0.24
+KSC,SNSM gamma only vs ECA gamma only,AA,0.103,0.513,2/5,-0.19 -0.05 +0.94 +0.20 -0.38
+KSC,SNSM gamma+beta vs CBAM,OA,0.093,0.164,4/5,-0.08 +0.36 +0.08 +0.04 +0.06
+KSC,SNSM gamma+beta vs CBAM,AA,0.219,0.325,4/5,-0.11 +0.75 +0.27 +0.08 +0.10
+KSC,SNSM gamma+beta vs plain,OA,-0.024,0.274,3/5,+0.28 +0.02 -0.46 -0.04 +0.08
+KSC,SNSM gamma+beta vs plain,AA,-0.053,0.474,3/5,+0.45 +0.05 -0.83 -0.06 +0.13
 Botswana,SNSM: gamma+beta vs gamma only,OA,-0.058,0.164,1/5,-0.10 +0.19 -0.16 -0.23 +0.00
 Botswana,SNSM: gamma+beta vs gamma only,AA,-0.035,0.136,1/5,-0.08 +0.17 -0.07 -0.20 -0.00
 Botswana,FC: gamma+beta vs gamma only,OA,-0.142,0.213,1/5,-0.03 -0.49 -0.06 +0.06 -0.19
