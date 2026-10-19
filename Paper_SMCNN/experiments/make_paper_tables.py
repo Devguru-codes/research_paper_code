@@ -135,8 +135,8 @@ for d in ['IndianPines', 'KSC', 'PaviaU', 'Botswana', 'Salinas', 'WHU_Hi_HanChua
         s = stats(d, 'snsm', c)
         macros.append(mac(f'snsm{key}{c}', f'{s[0]:.2f}$\\pm${s[1]:.2f}'))
     n = runs[runs.dataset == d].iloc[0]
-    macros.append(mac(f'ntrain{key}', int(n.n_train)))
-    macros.append(mac(f'ntest{key}', int(n.n_test)))
+    macros.append(mac(f'ntrain{key}', f'{int(n.n_train):,}'.replace(',', '{,}')))
+    macros.append(mac(f'ntest{key}', f'{int(n.n_test):,}'.replace(',', '{,}')))
 hyb = runs[(runs.dataset == 'Botswana') & (runs.model == 'hybridsn')].OA
 macros.append(mac('hybridBWmin', f'{hyb.min():.1f}'))
 write('numbers.tex', macros)
