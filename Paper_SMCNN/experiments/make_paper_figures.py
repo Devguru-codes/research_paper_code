@@ -1,8 +1,9 @@
-"""Draws the paper's data figures from code_and_results/final/*.csv into paper/rsl/figures/.
+"""Draws the paper's data figures from experiments/results/*.csv into paper/figures/.
 
-Usage: python code_and_results/make_paper_figures.py
+Usage: python experiments/make_paper_figures.py
 """
 import os
+import shutil
 
 import matplotlib
 matplotlib.use('Agg')
@@ -11,9 +12,10 @@ import numpy as np
 import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-FINAL = os.path.join(HERE, 'final')
-OUT = os.path.join(HERE, '..', 'paper', 'rsl', 'figures')
+FINAL = os.path.join(HERE, 'results')
+OUT = os.path.join(HERE, '..', 'paper', 'figures')
 os.makedirs(OUT, exist_ok=True)
+shutil.copy(os.path.join(FINAL, 'classification_map_IndianPines.pdf'), OUT)  # keeps paper/ self-contained
 
 runs = pd.read_csv(os.path.join(FINAL, 'runs.csv'))
 HIGHLIGHT, MUTED, INK, GRID = '#2a78d6', '#8a8984', '#0b0b0b', '#e4e3df'

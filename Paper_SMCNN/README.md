@@ -3,15 +3,23 @@
 Code, results and manuscript for the Remote Sensing Letters submission
 **"Spectral-neighbourhood self-modulation for lightweight hyperspectral image classification with scarce labels"**.
 
-## Where things are
+## Layout
 
-| Path | What it is |
-|---|---|
-| `notebooks/phase1_final_experiments.ipynb` | The one notebook behind every number in the paper |
-| `code_and_results/final/` | Merged results: `runs.csv` (one row per training run), `efficiency.csv`, tables, classification map |
-| `code_and_results/make_paper_tables.py` | Writes the paper's LaTeX tables and inline numbers from `final/*.csv` |
-| `code_and_results/make_paper_figures.py` | Draws the paper's data figures from `final/*.csv` |
-| `paper/rsl/` | Manuscript in the Taylor & Francis Interact template (`snsm_rsl.tex`, `refs.bib`, `snsm_rsl.pdf`) |
+```
+Paper_SMCNN/
+├── paper/                              Manuscript (Taylor & Francis Interact template)
+│   ├── snsm_rsl.tex / snsm_rsl.pdf     source and compiled paper
+│   ├── refs.bib                        42 references (DOIs checked against Crossref)
+│   ├── interact.cls, tfcad.bst         T&F class and Chicago author-date style
+│   ├── tables/                         generated LaTeX tables and inline numbers
+│   └── figures/                        generated figures + SNSM block diagram (TikZ)
+├── experiments/
+│   ├── phase1_final_experiments.ipynb  the one notebook behind every result in the paper
+│   ├── results/                        merged results: runs.csv (one row per run), efficiency.csv, map
+│   ├── make_paper_tables.py            writes paper/tables/ from results/
+│   └── make_paper_figures.py           writes paper/figures/ from results/
+└── archive/                            earlier experiments (superseded; kept for history)
+```
 
 ## Protocol
 
@@ -28,21 +36,21 @@ Datasets: Indian Pines, Pavia University, KSC, Botswana (all models); Salinas an
 
 ## Reproduce
 
-1. On Kaggle, import `notebooks/phase1_final_experiments.ipynb`, add the `devgurucodes/datasets-hsi-all` dataset as input, choose GPU T4, then *Save & Run All*.
+1. On Kaggle, import `experiments/phase1_final_experiments.ipynb`, add the `devgurucodes/datasets-hsi-all` dataset as input, choose GPU T4, then *Save & Run All*.
    The notebook writes everything to `/kaggle/working/final/`. To use two GPUs, run copies with different `CORE_DATASETS`/`LARGE_DATASETS` lists and concatenate their `runs.csv` and `efficiency.csv`.
-2. Put the merged CSVs in `code_and_results/final/`, then rebuild the tables and the paper:
+2. Put the merged CSVs in `experiments/results/`, then rebuild the tables, figures and paper:
 
 ```bash
-python code_and_results/make_paper_tables.py && python code_and_results/make_paper_figures.py
+python experiments/make_paper_tables.py && python experiments/make_paper_figures.py
 ```
 
 ```bash
-cd paper/rsl && latexmk -pdf snsm_rsl.tex
+cd paper && latexmk -pdf snsm_rsl.tex
 ```
 
-## Older material
+## Archive
 
-The other notebooks, `code_and_results/results*/`, `research.md` and the Springer manuscripts in `paper/` (`paper.tex`, `paper_springer*.tex`) are from earlier experiments, several of which selected checkpoints on the test set. They are kept for history only; their numbers are superseded by `code_and_results/final/`.
+`archive/` holds the earlier notebooks and their outputs. Several of those runs selected checkpoints on the test set, so their numbers are superseded by `experiments/results/`.
 
 ## License
 

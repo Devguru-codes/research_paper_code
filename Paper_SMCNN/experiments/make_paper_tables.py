@@ -1,7 +1,7 @@
-"""Writes the LaTeX tables of the RSL paper straight from code_and_results/final/*.csv.
+"""Writes the LaTeX tables of the RSL paper straight from experiments/results/*.csv.
 
 Every number in the paper's tables comes from here; nothing is typed by hand.
-Usage: python code_and_results/make_paper_tables.py
+Usage: python experiments/make_paper_tables.py
 """
 import json
 import os
@@ -10,8 +10,8 @@ import numpy as np
 import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-FINAL = os.path.join(HERE, 'final')
-OUT = os.path.join(HERE, '..', 'paper', 'rsl', 'tables')
+FINAL = os.path.join(HERE, 'results')
+OUT = os.path.join(HERE, '..', 'paper', 'tables')
 
 LABELS = {'plain': 'Plain CNN', 'se_gamma': r'SE ($\gamma$)', 'eca_gamma': r'ECA ($\gamma$)', 'cbam': 'CBAM', 'fc_gamma_beta': r'FC ($\gamma{+}\beta$)',
           'snsm_gamma': r'SNSM ($\gamma$)', 'snsm': r'SNSM ($\gamma{+}\beta$)',

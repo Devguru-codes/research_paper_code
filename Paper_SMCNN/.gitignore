@@ -34,5 +34,5 @@ saved_models/
 *.fdb_latexmk
 *.synctex.gz
 
-# Raw Kaggle downloads (merged results live in code_and_results/final/)
-code_and_results/final_kaggle/
+# Raw Kaggle downloads (merged results live in experiments/results/)
+experiments/kaggle_raw/
