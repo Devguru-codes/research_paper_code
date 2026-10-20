@@ -1,0 +1,46 @@
+\documentclass[11pt]{article}
+\usepackage[a4paper,margin=2.2cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{url}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{6pt}
+\pagestyle{empty}
+
+\begin{document}
+
+\begin{flushright}
+Swati Hira\\
+Department of Computer Science and Engineering\\
+IIIT Nagpur, Nagpur, India\\
+\url{shira@iiitn.ac.in}\\[4pt]
+\today
+\end{flushright}
+
+The Editor-in-Chief\\
+\textit{Remote Sensing Letters}\\
+Taylor \& Francis
+
+Dear Editor,
+
+We submit the manuscript \textbf{``Does the choice of channel attention matter for few-label hyperspectral classification? A controlled comparison under random, standard and patch-disjoint splits''} for consideration as a Research Letter in \textit{Remote Sensing Letters}.
+
+Channel-attention blocks are frequently proposed for lightweight hyperspectral classifiers, and their gains are usually reported on random pixel splits in which overlapping patches leak spatial context into the test set. Leakage itself has been documented for whole architectures; whether the \emph{choice of block} still matters once evaluation is tightened has, to our knowledge, not been tested with paired statistics. Our letter does this:
+
+\begin{itemize}\setlength{\itemsep}{2pt}
+\item Seven modulation blocks (SE, ECA, CBAM, GCT, SRM and two variants of a dispersion-aware block we introduce, SNSM) are compared on one backbone with identical inputs and schedule, no test-based model selection, up to fifteen paired seeds and Holm-corrected Wilcoxon tests, under random, standard and patch-disjoint splits.
+\item Block choice matters in only one regime: random splits of Indian Pines, whose smallest classes have one or two training pixels. There, dispersion-based gates gain 2--4 points of average accuracy; under the standard split and the patch-disjoint splits the blocks are practically or statistically indistinguishable, while the protocol itself moves accuracy by more than 30 points.
+\item We show that the commonly distributed Kennedy Space Center file stores small negative values as unsigned integers, a problem earlier reported as sensor saturation, and that reading it correctly raises convolutional models from 77--92\% to over 99\% average accuracy.
+\end{itemize}
+
+We believe these results suit the journal's readership because they bear directly on how new modules for hyperspectral classification are evaluated and compared. The findings are short, self-contained and supported by complete code and per-run results, which are publicly available at \url{https://github.com/Devguru-codes/research_paper_code}.
+
+The manuscript is original, has not been published previously and is not under consideration elsewhere. All authors have approved the submission. The authors declare no competing interests, and the research received no external funding. Generative AI was used to assist with experiment code, reference checking and language editing, as stated in the manuscript; the authors verified all content and take full responsibility for it.
+
+Thank you for considering our work.
+
+Yours sincerely,
+
+Swati Hira (corresponding author), on behalf of Devguru Tiwari, Pratibha Kokardekar and S.~R. Sathe
+
+\end{document}
