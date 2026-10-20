@@ -27,11 +27,11 @@ eff = pd.read_csv(os.path.join(FINAL, 'efficiency.csv'))
 abl = pd.read_csv(os.path.join(FINAL, 'phase2_runs.csv')).query("study == 'ablation'")
 dj = pd.read_csv(os.path.join(FINAL, 'phase3_disjoint_runs.csv'))         # patch-disjoint 5% splits
 std = pd.read_csv(os.path.join(FINAL, 'phase5_std_runs.csv')).replace({'dataset': {'Indian': 'IndianPines'}})
-
-# Held-out protocol per scene: the standard fixed split for IP (region-separated, but every test patch overlaps a
-# training patch at 15x15), the patch-disjoint split for PU and KSC (no overlap).
-LF = pd.concat([std[std.dataset == 'IndianPines'], dj[dj.dataset.isin(['PaviaU', 'KSC'])]], ignore_index=True)
-LF_SETS = ['IndianPines', 'PaviaU', 'KSC']
+cnt = pd.read_csv(os.path.join(FINAL, 'phase6_counts_runs.csv'))    # random IP split, standard class counts
+DJ_SETS = ['PaviaU', 'KSC']
+# Indian Pines protocols: random 5%, random with the standard split's class counts, standard fixed split
+# (region-separated, but every test patch overlaps a training patch at 15x15).
+IP_PROTOCOLS = [('Random 5\\%', runs), ('Random, 50/15 per class', cnt), ('Standard split', std)]
 
 
 def vals(df, ds, m, col):
@@ -60,12 +60,23 @@ def holm(p):
 assert np.allclose(holm(np.array([0.01, 0.04, 0.03])), [0.03, 0.06, 0.06])
 
 
+def boot_ci(d, n=10000):
+    # 95% percentile bootstrap interval of the mean paired difference (fixed generator, reproducible).
+    m = np.random.RandomState(0).choice(d, size=(n, len(d)), replace=True).mean(1)
+    return np.percentile(m, [2.5, 97.5])
+
+
+_lo, _hi = boot_ci(np.array([1.0, 2.0, 3.0, 4.0]))
+assert _lo <= 2.5 <= _hi and 1.0 <= _lo and _hi <= 4.0
+
+
 def paired(df, ds, col):
-    # SNSM (gamma+beta) minus each baseline on shared seeds: mean, wins, Holm-adjusted Wilcoxon p.
+    # SNSM (gamma+beta) minus each baseline on shared seeds: mean, 95% CI, wins, n, Holm-adjusted Wilcoxon p
+    # (Holm family = the seven comparisons of one scene and protocol).
     ref = vals(df, ds, 'snsm', col)
     diffs = [(ref - vals(df, ds, m, col)).dropna() for m in BASES]
     p = holm(np.array([wilcoxon(d).pvalue for d in diffs]))
-    return {m: (d.mean(), int((d > 0).sum()), len(d), pv) for m, d, pv in zip(BASES, diffs, p)}
+    return {m: (d.mean(), boot_ci(d.to_numpy()), int((d > 0).sum()), len(d), pv) for m, d, pv in zip(BASES, diffs, p)}
 
 
 # Table: random 5% splits, OA / AA on the four core scenes (best mean per column in bold)
@@ -81,36 +92,44 @@ for m in LABELS:
 lines += [r'\bottomrule', r'\end{tabular}']
 write('main.tex', lines)
 
-# Table: protocol comparison. Random-split AA next to leakage-free OA / AA for every block.
-lines = [r'\begin{tabular}{l' + 'ccc' * len(LF_SETS) + '}', r'\toprule',
-         'Block & ' + ' & '.join(f'\\multicolumn{{3}}{{c}}{{{SHORT[d]}}}' for d in LF_SETS) + r' \\',
-         ' & ' + ' & '.join(['AA$_\\mathrm{R}$ & OA$_\\mathrm{H}$ & AA$_\\mathrm{H}$'] * len(LF_SETS)) + r' \\', r'\midrule']
-cols = [(runs, 'AA'), (LF, 'OA'), (LF, 'AA')]
-top = {(d, i): max(vals(df, d, m, c).mean() for m in BLOCKS) for d in LF_SETS for i, (df, c) in enumerate(cols)}
-for m in BLOCKS:
-    cells = [fmt(vals(df, d, m, c), top[(d, i)]) for d in LF_SETS for i, (df, c) in enumerate(cols)]
-    lines.append(LABELS[m] + ' & ' + ' & '.join(cells) + r' \\')
-spread = {(d, i): np.ptp([vals(df, d, m, c).mean() for m in BLOCKS]) for d in LF_SETS for i, (df, c) in enumerate(cols)}
-lines += [r'\midrule', 'Spread of block means & ' + ' & '.join(f'{spread[(d, i)]:.2f}' for d in LF_SETS for i in range(3)) + r' \\',
-          r'\bottomrule', r'\end{tabular}']
-write('protocol.tex', lines)
+def block_table(cols, header, name):
+    # cols: list of (dataframe, scene, metric); bold = best block mean per column; last row = range of block means
+    top = [max(vals(df, d, m, c).mean() for m in BLOCKS) for df, d, c in cols]
+    lines = [r'\begin{tabular}{l' + 'c' * len(cols) + '}', r'\toprule'] + header + [r'\midrule']
+    for m in BLOCKS:
+        lines.append(LABELS[m] + ' & ' + ' & '.join(fmt(vals(df, d, m, c), t) for (df, d, c), t in zip(cols, top)) + r' \\')
+    spread = [np.ptp([vals(df, d, m, c).mean() for m in BLOCKS]) for df, d, c in cols]
+    lines += [r'\midrule', 'Range of block means & ' + ' & '.join(f'{s:.2f}' for s in spread) + r' \\',
+              r'\bottomrule', r'\end{tabular}']
+    write(name, lines)
+    return spread
 
-# Table: paired SNSM (gamma+beta) - baseline AA differences, random vs leakage-free
-P_COLS = [('IP, random', runs, 'IndianPines'), ('IP, standard', LF, 'IndianPines'),
-          ('PU, disjoint', LF, 'PaviaU'), ('KSC, disjoint', LF, 'KSC')]
+
+# Table: Indian Pines, AA under three protocols
+ip_spread = block_table([(df, 'IndianPines', 'AA') for _, df in IP_PROTOCOLS],
+                        ['Block & ' + ' & '.join(n for n, _ in IP_PROTOCOLS) + r' \\'], 'protocol_ip.tex')
+# Table: PU and KSC, random vs patch-disjoint
+dj_cols = [(df, d, c) for d in DJ_SETS for df, c in [(runs, 'AA'), (dj, 'OA'), (dj, 'AA')]]
+dj_spread = block_table(dj_cols, ['Block & ' + ' & '.join(f'\\multicolumn{{3}}{{c}}{{{SHORT[d]}}}' for d in DJ_SETS) + r' \\',
+                                  ' & ' + ' & '.join(['AA, random & OA, disjoint & AA, disjoint'] * len(DJ_SETS)) + r' \\'],
+                        'protocol_dj.tex')
+
+# Table: paired SNSM (gamma+beta) - block AA differences with 95% bootstrap CI; * = Holm-adjusted p < 0.05
+P_COLS = [('IP random 5\\%', runs, 'IndianPines'), ('IP random 50/15', cnt, 'IndianPines'),
+          ('IP standard', std, 'IndianPines'), ('PU disjoint', dj, 'PaviaU'), ('KSC disjoint', dj, 'KSC')]
 res = {name: paired(df, d, 'AA') for name, df, d in P_COLS}
 lines = [r'\begin{tabular}{l' + 'c' * len(P_COLS) + '}', r'\toprule',
          r'SNSM ($\gamma{+}\beta$) $-$ & ' + ' & '.join(name for name, _, _ in P_COLS) + r' \\', r'\midrule']
 for m in BASES:
     cells = []
     for name, _, _ in P_COLS:
-        mu, w, n, pv = res[name][m]
-        star = '$^{*}$' if pv < 0.05 else ''
-        cells.append(f'{mu:+.2f}{star} ({w}/{n})')
+        mu, (lo, hi), w, n, pv = res[name][m]
+        cells.append(f'{mu:+.2f}{"$^{*}$" if pv < 0.05 else ""} [{lo:+.1f}, {hi:+.1f}]')
     lines.append(LABELS[m] + ' & ' + ' & '.join(cells) + r' \\')
 lines += [r'\bottomrule', r'\end{tabular}']
 write('paired.tex', lines)
-n_sig = {name: sum(r[3] < 0.05 for r in res[name].values()) for name in res}
+n_sig = {name: sum(r[4] < 0.05 for r in res[name].values()) for name in res}
+ci_width = {name: np.median([r[1][1] - r[1][0] for r in res[name].values()]) for name in res}
 
 # Table: SNSM descriptor / initialisation ablation on IP (random 5%)
 ABL = [('snsm', 'mean, var, grad (SNSM)'), ('snsm_mean', 'mean'), ('snsm_mean_var', 'mean, var'),
@@ -168,17 +187,21 @@ for d in CORE:
     macros += [mac(f'ntrain{SHORT[d]}', thousands(n.n_train)), mac(f'ntest{SHORT[d]}', thousands(n.n_test))]
 s = std[(std.dataset == 'IndianPines') & (std.model == 'snsm')].iloc[0]
 macros += [mac('ntrainIPstd', thousands(s.n_train)), mac('ntestIPstd', thousands(s.n_test))]
+s = cnt[(cnt.dataset == 'IndianPines') & (cnt.model == 'snsm')].iloc[0]
+macros += [mac('ntrainIPcnt', thousands(s.n_train)), mac('ntestIPcnt', thousands(s.n_test))]
 for d in ['PaviaU', 'KSC']:
     t = dj[(dj.dataset == d) & (dj.model == 'snsm')]
     macros.append(mac(f'djtest{SHORT[d]}', f'{thousands(t.n_test.min())}--{thousands(t.n_test.max())}'))
     macros.append(mac(f'djclasses{SHORT[d]}', int(t.n_test_classes.min())))
-for d in LF_SETS:   # mean AA drop from random to leakage-free, averaged over blocks
-    drop = np.mean([vals(runs, d, m, 'AA').mean() - vals(LF, d, m, 'AA').mean() for m in BLOCKS])
+for i, d in enumerate(DJ_SETS):   # mean AA drop from random to patch-disjoint, averaged over blocks
+    drop = np.mean([vals(runs, d, m, 'AA').mean() - vals(dj, d, m, 'AA').mean() for m in BLOCKS])
     macros.append(mac(f'drop{SHORT[d]}', f'{drop:.1f}'))
-    macros.append(mac(f'spreadRand{SHORT[d]}', f'{spread[(d, 0)]:.2f}'))
-    macros.append(mac(f'spreadLF{SHORT[d]}', f'{spread[(d, 2)]:.2f}'))
-for name, key in zip(res, ['IPrand', 'IPstd', 'PUdj', 'KSCdj']):
+    macros.append(mac(f'spreadDJ{SHORT[d]}', f'{dj_spread[3 * i + 2]:.2f}'))
+for (name, _), key in zip(IP_PROTOCOLS, ['Rand', 'Cnt', 'Std']):
+    macros.append(mac(f'spreadIP{key}', f'{ip_spread[[n for n, _ in IP_PROTOCOLS].index(name)]:.2f}'))
+for name, key in zip(res, ['IPrand', 'IPcnt', 'IPstd', 'PUdj', 'KSCdj']):
     macros.append(mac(f'nsig{key}', n_sig[name]))
+    macros.append(mac(f'ciw{key}', f'{ci_width[name]:.1f}'))
 ip_oa = [vals(runs, 'IndianPines', m, 'OA').mean() for m in BLOCKS]
 macros.append(mac('ipRandOAspread', f'{np.ptp(ip_oa):.2f}'))
 macros.append(mac('nseedsIP', vals(runs, 'IndianPines', 'snsm', 'AA').size))

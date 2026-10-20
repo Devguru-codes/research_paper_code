@@ -33,13 +33,10 @@ def save(fig, name):
     plt.close(fig)
 
 
-# Figure: paired same-seed AA differences SNSM (gamma+beta) - baseline under the leakage-free protocols
-std = pd.read_csv(os.path.join(FINAL, 'phase5_std_runs.csv')).replace({'dataset': {'Indian': 'IndianPines'}})
-LF = pd.concat([std[std.dataset == 'IndianPines'], dj[dj.dataset.isin(['PaviaU', 'KSC'])]], ignore_index=True)
-fig, axes = plt.subplots(1, 3, figsize=(7.0, 2.5), sharey=True)
-for ax, (ds, title) in zip(axes, [('IndianPines', 'Indian Pines (standard)'), ('PaviaU', 'Pavia Univ. (disjoint)'),
-                                  ('KSC', 'KSC (disjoint)')]):
-    g = LF[LF.dataset == ds]
+# Figure: paired same-seed AA differences SNSM (gamma+beta) - baseline on the patch-disjoint splits
+fig, axes = plt.subplots(1, 2, figsize=(7.0, 2.5), sharey=True)
+for ax, (ds, title) in zip(axes, [('PaviaU', 'Pavia University (patch-disjoint)'), ('KSC', 'KSC (patch-disjoint)')]):
+    g = dj[dj.dataset == ds]
     ref = g[g.model == 'snsm'].set_index('seed').AA
     for row, m in enumerate(BASES):
         d = (ref - g[g.model == m].set_index('seed').AA).dropna().to_numpy()

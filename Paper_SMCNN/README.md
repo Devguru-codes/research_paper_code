@@ -22,6 +22,7 @@ Paper_SMCNN/
 │   ├── phase3_disjoint_gct_srm.ipynb   GCT/SRM on random splits; patch-disjoint splits; extra seeds
 │   ├── phase4_band_modulation.ipynb    SNSM and other blocks applied to raw bands in wavelength order
 │   ├── phase5_standard_splits.ipynb    standard fixed Indian Pines split (SpectralFormer)
+│   ├── phase6_matched_counts.ipynb     random IP split with the standard split's class counts (50/15)
 │   ├── results/                        one row per run (see below), efficiency, ground truths
 │   ├── make_paper_tables.py            writes paper/tables/ from results/
 │   └── make_paper_figures.py           writes paper/figures/ from results/
@@ -34,6 +35,7 @@ Paper_SMCNN/
 - `phase3_disjoint_runs.csv` — patch-disjoint splits (PU and KSC: seeds 42-56; IP: seeds 42-46, not used in the paper because five IP classes get no test pixels)
 - `phase4_band_runs.csv`, `phase4_band_efficiency.csv` — raw-band modulation
 - `phase5_std_runs.csv` — standard Indian Pines split, seeds 42-56
+- `phase6_counts_runs.csv` — random Indian Pines split with 15 training pixels for the three smallest classes and 50 for the others, seeds 42-56
 - `efficiency.csv` — parameters, MACs and latency on an IP patch
 
 ## Protocol
