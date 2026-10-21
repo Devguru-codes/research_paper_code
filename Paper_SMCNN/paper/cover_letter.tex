@@ -23,13 +23,13 @@ Taylor \& Francis
 
 Dear Editor,
 
-We submit the manuscript \textbf{``Does the choice of channel attention matter for few-label hyperspectral classification? A controlled comparison under random, standard and patch-disjoint splits''} for consideration as a Research Letter in \textit{Remote Sensing Letters}.
+We submit the manuscript \textbf{``Does channel attention help few-label hyperspectral CNNs? A controlled comparison finds no gain that transfers across scenes or protocols''} for consideration as a Research Letter in \textit{Remote Sensing Letters}.
 
 Channel-attention blocks are frequently proposed for lightweight hyperspectral classifiers, and their gains are usually reported on random pixel splits in which overlapping patches leak spatial context into the test set. Leakage itself has been documented for whole architectures; whether the \emph{choice of block} still matters once evaluation is tightened has, to our knowledge, not been tested with paired statistics. Our letter does this:
 
 \begin{itemize}\setlength{\itemsep}{2pt}
-\item Seven modulation blocks (SE, ECA, CBAM, GCT, SRM and two variants of a dispersion-aware block we introduce, SNSM) are compared on one backbone with identical inputs and schedule, no test-based model selection, up to fifteen paired seeds and Holm-corrected Wilcoxon tests, under random, standard and patch-disjoint splits.
-\item Block choice matters in only one regime: random splits of Indian Pines, whose smallest classes have one or two training pixels. There, dispersion-based gates gain 2--4 points of average accuracy; under the standard split and the patch-disjoint splits the blocks are practically or statistically indistinguishable, while the protocol itself moves accuracy by more than 30 points.
+\item Seven modulation blocks (SE, ECA, CBAM, GCT, SRM and two variants of a dispersion-aware block we introduce, SNSM) are compared on one backbone with identical inputs and schedule, no test-based model selection, up to fifteen paired seeds, bootstrap intervals and Holm-corrected Wilcoxon tests, under six protocols that vary class counts and spatial overlap.
+\item No block gives a gain that transfers. The one effect we find, a 2--4 point advantage of dispersion-based gates on random Indian Pines splits, comes from three classes with one or two training pixels and does not reappear when the same scarcity is imposed on Pavia University or Kennedy Space Center; under patch-disjoint splits the protocol itself moves accuracy by more than 30 points.
 \item We show that the commonly distributed Kennedy Space Center file stores small negative values as unsigned integers, a problem earlier reported as sensor saturation, and that reading it correctly raises convolutional models from 77--92\% to over 99\% average accuracy.
 \end{itemize}
 

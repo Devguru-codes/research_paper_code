@@ -23,6 +23,7 @@ Paper_SMCNN/
 │   ├── phase4_band_modulation.ipynb    SNSM and other blocks applied to raw bands in wavelength order
 │   ├── phase5_standard_splits.ipynb    standard fixed Indian Pines split (SpectralFormer)
 │   ├── phase6_matched_counts.ipynb     random IP split with the standard split's class counts (50/15)
+│   ├── phase7_class_scarcity.ipynb     only the three smallest classes changed: IP to 15 pixels, PU/KSC to 1/1/2
 │   ├── results/                        one row per run (see below), efficiency, ground truths
 │   ├── make_paper_tables.py            writes paper/tables/ from results/
 │   └── make_paper_figures.py           writes paper/figures/ from results/
@@ -36,6 +37,7 @@ Paper_SMCNN/
 - `phase4_band_runs.csv`, `phase4_band_efficiency.csv` — raw-band modulation
 - `phase5_std_runs.csv` — standard Indian Pines split, seeds 42-56
 - `phase6_counts_runs.csv` — random Indian Pines split with 15 training pixels for the three smallest classes and 50 for the others, seeds 42-56
+- `phase7_scarcity_runs.csv` — random 5% splits with only the three smallest classes changed (`smallfix`: IP to 15 pixels; `scarce`: PU and KSC to 1/1/2), seeds 42-56
 - `efficiency.csv` — parameters, MACs and latency on an IP patch
 
 ## Protocol

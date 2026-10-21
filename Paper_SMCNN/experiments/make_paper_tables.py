@@ -131,6 +131,25 @@ write('paired.tex', lines)
 n_sig = {name: sum(r[4] < 0.05 for r in res[name].values()) for name in res}
 ci_width = {name: np.median([r[1][1] - r[1][0] for r in res[name].values()]) for name in res}
 
+# Phase 7: change only the three smallest classes of a random 5% split
+sc = pd.read_csv(os.path.join(FINAL, 'phase7_scarcity_runs.csv'))
+SC_COLS = [('IP, 5\\%', runs, 'IndianPines'), ('IP, smallest 15', sc[sc.study == 'smallfix'], 'IndianPines'),
+           ('PU, 5\\%', runs, 'PaviaU'), ('PU, smallest 1/1/2', sc[sc.study == 'scarce'], 'PaviaU'),
+           ('KSC, 5\\%', runs, 'KSC'), ('KSC, smallest 1/1/2', sc[sc.study == 'scarce'], 'KSC')]
+sc_spread = block_table([(df, d, 'AA') for _, df, d in SC_COLS],
+                        ['Block & ' + ' & '.join(n for n, _, _ in SC_COLS) + r' \\'], 'scarcity.tex')
+sres = {name: paired(df, d, 'AA') for name, df, d in SC_COLS[1::2]}
+lines = [r'\begin{tabular}{l' + 'c' * len(sres) + '}', r'\toprule',
+         r'SNSM ($\gamma{+}\beta$) $-$ & ' + ' & '.join(sres) + r' \\', r'\midrule']
+for m in BASES:
+    cells = []
+    for name in sres:
+        mu, (lo, hi), w, n, pv = sres[name][m]
+        cells.append(f'{mu:+.2f}{"$^{*}$" if pv < 0.05 else ""} [{lo:+.1f}, {hi:+.1f}]')
+    lines.append(LABELS[m] + ' & ' + ' & '.join(cells) + r' \\')
+lines += [r'\bottomrule', r'\end{tabular}']
+write('paired_scarcity.tex', lines)
+
 # Table: SNSM descriptor / initialisation ablation on IP (random 5%)
 ABL = [('snsm', 'mean, var, grad (SNSM)'), ('snsm_mean', 'mean'), ('snsm_mean_var', 'mean, var'),
        ('snsm_mean_grad', 'mean, grad'), ('snsm_noinit', 'mean, var, grad; default init.')]
@@ -202,6 +221,10 @@ for (name, _), key in zip(IP_PROTOCOLS, ['Rand', 'Cnt', 'Std']):
 for name, key in zip(res, ['IPrand', 'IPcnt', 'IPstd', 'PUdj', 'KSCdj']):
     macros.append(mac(f'nsig{key}', n_sig[name]))
     macros.append(mac(f'ciw{key}', f'{ci_width[name]:.1f}'))
+for (name, _, _), key, sp in zip(SC_COLS, ['IPfive', 'IPsmall', 'PUfive', 'PUscarce', 'KSCfive', 'KSCscarce'], sc_spread):
+    macros.append(mac(f'spreadSC{key}', f'{sp:.2f}'))
+for name, key in zip(sres, ['IPsmall', 'PUscarce', 'KSCscarce']):
+    macros.append(mac(f'nsig{key}', sum(r[4] < 0.05 for r in sres[name].values())))
 ip_oa = [vals(runs, 'IndianPines', m, 'OA').mean() for m in BLOCKS]
 macros.append(mac('ipRandOAspread', f'{np.ptp(ip_oa):.2f}'))
 macros.append(mac('nseedsIP', vals(runs, 'IndianPines', 'snsm', 'AA').size))
