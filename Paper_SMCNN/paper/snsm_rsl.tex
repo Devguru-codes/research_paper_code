@@ -30,7 +30,7 @@
 
 \articletype{RESEARCH LETTER}
 
-\title{Does channel attention help few-label hyperspectral CNNs? A controlled comparison finds no gain that transfers across scenes or protocols}
+\title{Channel attention gives no transferable gain in few-label hyperspectral CNNs}
 
 \author{
 \name{Swati Hira\textsuperscript{a}\thanks{CONTACT Swati Hira. Email: shira@iiitn.ac.in}, Devguru Tiwari\textsuperscript{a}, Pratibha Kokardekar\textsuperscript{b} and S.~R. Sathe\textsuperscript{c}}
@@ -76,7 +76,7 @@ The second convolution starts at zero, so the block is initially the identity; i
 
 \begin{figure}[t]
 \centering
-\resizebox{\textwidth}{!}{\input{figures/snsm_block.tex}}
+\resizebox{0.8\textwidth}{!}{\input{figures/snsm_block.tex}}
 \caption{SNSM inside a residual block. Per-channel descriptors of the feature map $\mathbf{h}$ are filtered along the channel axis by two one-dimensional convolutions, whose output sets a bounded scale $\gamma_c$ and a shift $\beta_c$ for each channel. The second convolution starts at zero, so the block is initially the identity.}
 \label{fig:block}
 \end{figure}
@@ -110,7 +110,7 @@ The second convolution starts at zero, so the block is initially the identity; i
 \label{tab:main}
 \end{table}
 
-\textbf{Random 5\% splits.} On PU, KSC and BW the eight backbone variants lie within 0.32 AA points of each other (Table~\ref{tab:main}). Only IP separates them: SNSM ($\gamma{+}\beta$) has the highest AA and is significantly better than the plain CNN, SE, ECA, CBAM and GCT, by 1.75--3.84 points (Table~\ref{tab:paired}), but not than SRM or SNSM ($\gamma$). The overall accuracy of all eight variants differs by only \ipRandOAspread\ points, so the gain comes from a few classes. Oats and Grass-pasture-mowed have one training pixel and 19 and 27 test pixels, so a few test pixels move their per-class accuracy by tens of points. HybridSN and SSFTT, trained under our protocol, are less accurate than the backbone variants.
+\textbf{Random 5\% splits.} On PU, KSC and BW the eight backbone variants lie within 0.32 AA points of each other (Table~\ref{tab:main}). Only IP separates them: SNSM ($\gamma{+}\beta$) has the highest AA and is significantly better than the plain CNN, SE, ECA, CBAM and GCT, by 1.75--3.84 points (Table~\ref{tab:paired}), but not than SRM or SNSM ($\gamma$). The overall accuracy of all eight variants differs by only \ipRandOAspread\ points, so the gain comes from a few classes. Oats and Grass-pasture-mowed have one training pixel and 19 and 27 test pixels, so a few test pixels move their per-class accuracy by tens of points. Indeed the gap lies almost entirely in these two single-pixel classes: SRM and the two SNSM variants reach 80.0--84.4\% on Grass-pasture-mowed and 66.3--77.2\% on Oats, against 62.7--78.5\% and 36.8--56.1\% for the other blocks, whereas on Alfalfa (two training pixels) all blocks lie within 3.3 points, and their mean accuracy over the remaining 13 classes differs by less than one point. HybridSN and SSFTT, trained under our protocol, are less accurate than the backbone variants.
 
 \begin{table}[t]
 \tbl{Indian Pines: AA (\%, mean $\pm$ std over 15 seeds) of the eight backbone variants under three protocols. The last row is the range of the block means.}
@@ -126,7 +126,7 @@ The second convolution starts at zero, so the block is initially the identity; i
 
 \textbf{Class counts, not split geometry.} When every IP class has 15--50 training pixels, the advantage disappears (Table~\ref{tab:protocol_ip}). In the random 50/15 split the eight block means span only \spreadIPCnt\ AA points, no difference is significant and every bootstrap interval lies within $\pm$0.3 points. In the standard split they span \spreadIPStd\ points; the only significant difference, against ECA, is 0.33 points. Because the random 50/15 split keeps the random geometry and changes only the class counts, the 3.84-point spread of the random 5\% protocol is explained by the one or two training pixels of the smallest classes, not by spatial leakage.
 
-\textbf{Only the smallest classes, and only on Indian Pines.} Changing only the three smallest IP classes confirms this (Table~\ref{tab:scarcity}): with 15 training pixels for them and 5\% for all others, the block means span \spreadSCIPsmall\ points instead of 3.84. SNSM ($\gamma{+}\beta$) remains significantly better than every other block, but by only 0.30--0.60 points (Table~\ref{tab:paired_scarcity}). The converse test fails, however. Reducing the three smallest classes of PU and KSC to 1, 1 and 2 training pixels lowers AA by about 15 and 7 points, but the dispersion-based gates do not gain: on PU, SNSM ($\gamma{+}\beta$) has the lowest mean AA and is significantly worse than ECA and SNSM ($\gamma$), and on KSC no difference is significant and SRM is the lowest. The Indian Pines effect therefore depends on which classes are scarce, not only on how scarce they are.
+\textbf{Only the smallest classes, and only on Indian Pines.} Changing only the three smallest IP classes confirms this (Table~\ref{tab:scarcity}): with 15 training pixels for them and 5\% for all others, the block means span \spreadSCIPsmall\ points instead of 3.84. A small edge remains: SNSM ($\gamma{+}\beta$) is still significantly better than every other block, by 0.30--0.60 points, which reaches our 0.5-point threshold only against SE and CBAM (Table~\ref{tab:paired_scarcity}). The converse test fails, however. Reducing the three smallest classes of PU and KSC to 1, 1 and 2 training pixels lowers AA by about 15 and 7 points, but the dispersion-based gates do not gain: on PU, SNSM ($\gamma{+}\beta$) has the lowest mean AA and is significantly worse than ECA and SNSM ($\gamma$), and on KSC no difference is significant and SRM is the lowest. The Indian Pines effect therefore depends on which classes are scarce, not only on how scarce they are.
 
 \begin{table}[t]
 \tbl{AA (\%, mean $\pm$ std) of random 5\% splits and of the same splits with only the three smallest classes changed (15 seeds; the unchanged PU and KSC splits use five). The last row is the range of the block means.}
