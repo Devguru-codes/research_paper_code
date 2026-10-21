@@ -3,6 +3,7 @@
 Every number in the paper's tables comes from here; nothing is typed by hand.
 Usage: python experiments/make_paper_tables.py
 """
+import json
 import os
 
 import numpy as np
@@ -75,6 +76,7 @@ def paired(df, ds, col):
     # (Holm family = the seven comparisons of one scene and protocol).
     ref = vals(df, ds, 'snsm', col)
     diffs = [(ref - vals(df, ds, m, col)).dropna() for m in BASES]
+    assert all(len(d) == len(ref) for d in diffs), f'{ds}: a block is missing seeds that SNSM has'
     p = holm(np.array([wilcoxon(d).pvalue for d in diffs]))
     return {m: (d.mean(), boot_ci(d.to_numpy()), int((d > 0).sum()), len(d), pv) for m, d, pv in zip(BASES, diffs, p)}
 
@@ -225,6 +227,85 @@ for (name, _, _), key, sp in zip(SC_COLS, ['IPfive', 'IPsmall', 'PUfive', 'PUsca
     macros.append(mac(f'spreadSC{key}', f'{sp:.2f}'))
 for name, key in zip(sres, ['IPsmall', 'PUscarce', 'KSCscarce']):
     macros.append(mac(f'nsig{key}', sum(r[4] < 0.05 for r in sres[name].values())))
+# Numbers and claims written in the paper's text. Numbers become macros; qualitative claims (which blocks
+# are significant, lowest, highest) are asserted, so a data change breaks this script instead of the text.
+def sig(r):
+    return {m for m, v in r.items() if v[4] < 0.05}
+
+
+def rng(a, b, d=2):
+    return f'{a:.{d}f}--{b:.{d}f}'
+
+
+r = res['IP random 5\\%']
+assert sig(r) == {'plain', 'se_gamma', 'eca_gamma', 'cbam', 'gct'}, sig(r)
+g = sorted(r[m][0] for m in sig(r))
+macros += [mac('ipRandGain', rng(g[0], g[-1])), mac('ipRandGainShort', rng(g[0], g[-1], 1)),
+           mac('ipRandGainInt', rng(g[0], g[-1], 0))]
+other = max(np.ptp([vals(runs, d, m, 'AA').mean() for m in BLOCKS]) for d in ['PaviaU', 'KSC', 'Botswana'])
+macros.append(mac('randOtherSpread', f'{other:.2f}'))
+P1 = ['plain', 'se_gamma', 'eca_gamma', 'cbam', 'fc_gamma_beta', 'snsm_gamma', 'snsm']   # variants also run before the KSC fix
+k = [vals(runs, 'KSC', m, 'AA').mean() for m in P1]
+macros.append(mac('kscFixedRange', rng(min(k), max(k), 1)))
+
+ipr = runs[(runs.dataset == 'IndianPines') & runs.seed.isin(range(42, 57))]
+pc = {m: np.nanmean(np.array([[np.nan if a is None else a for a in json.loads(p)]
+                              for p in ipr[ipr.model == m].per_class], dtype=float), axis=0) for m in BLOCKS}
+DISP, REST = ['srm', 'snsm_gamma', 'snsm'], ['plain', 'se_gamma', 'eca_gamma', 'cbam', 'gct']
+for cls, key in [(6, 'Gpm'), (8, 'Oats')]:   # Grass-pasture-mowed, Oats: one training pixel each
+    macros += [mac(f'pc{key}Disp', rng(min(pc[m][cls] for m in DISP), max(pc[m][cls] for m in DISP), 1)),
+               mac(f'pc{key}Rest', rng(min(pc[m][cls] for m in REST), max(pc[m][cls] for m in REST), 1))]
+macros.append(mac('pcAlfalfaSpread', f'{np.ptp([pc[m][0] for m in BLOCKS]):.1f}'))
+rest13 = [np.mean(np.delete(pc[m], [0, 6, 8])) for m in BLOCKS]
+assert np.ptp(rest13) < 1, rest13          # "differs by less than one point"
+
+ci_max = max(max(abs(v[1][0]), abs(v[1][1])) for v in res['IP random 50/15'].values())
+assert sig(res['IP random 50/15']) == set()
+macros.append(mac('cntCImax', f'{np.ceil(ci_max * 10) / 10:.1f}'))
+assert sig(res['IP standard']) == {'eca_gamma'}
+macros.append(mac('stdEcaDiff', f"{res['IP standard']['eca_gamma'][0]:.2f}"))
+
+r = sres['IP, smallest 15']
+assert sig(r) == set(BASES)
+g = sorted(v[0] for v in r.values())
+macros += [mac('smallGain', rng(g[0], g[-1])), mac('spreadSCIPsmallShort', f'{sc_spread[1]:.1f}')]
+assert {m for m, v in r.items() if v[0] >= 0.5} == {'cbam'}   # "exceeds 0.5 only against CBAM"
+for d, key in [('PaviaU', 'PU'), ('KSC', 'KSC')]:
+    s = sc[(sc.study == 'scarce') & (sc.dataset == d)]
+    drop = np.mean([vals(runs, d, m, 'AA').mean() - s[s.model == m].AA.mean() for m in BLOCKS])
+    macros.append(mac(f'dropScarce{key}', f'{drop:.0f}'))
+means = sc[(sc.study == 'scarce') & (sc.dataset == 'PaviaU')].groupby('model').AA.mean()
+assert means.idxmin() == 'snsm' and sig(sres['PU, smallest 1/1/2']) == {'eca_gamma', 'snsm_gamma'}
+means = sc[(sc.study == 'scarce') & (sc.dataset == 'KSC')].groupby('model').AA.mean()
+assert means.idxmin() == 'srm' and sig(sres['KSC, smallest 1/1/2']) == set()
+
+drops = []
+for d in DJ_SETS:
+    oa = [vals(dj, d, m, 'OA').mean() for m in BLOCKS]
+    macros.append(mac(f'djOA{SHORT[d]}', rng(min(oa), max(oa), 0)))
+    drops.append(np.mean([vals(runs, d, m, 'AA').mean() - vals(dj, d, m, 'AA').mean() for m in BLOCKS]))
+assert min(drops) > 30                    # "every block lost more than 30 AA points"
+macros.append(mac('dropRange', rng(min(drops), max(drops), 0)))
+sd = [vals(dj, d, m, 'AA').std(ddof=1) for d in DJ_SETS for m in BLOCKS]
+macros.append(mac('djStdRange', rng(min(sd), max(sd), 1)))
+assert sig(res['PU disjoint']) == set() and sig(res['KSC disjoint']) == {'plain', 'gct', 'srm'}
+ksc = dj[dj.dataset == 'KSC'].groupby('model').AA.mean()
+assert ksc.idxmax() == 'se_gamma' and ksc.idxmin() == 'srm'
+assert 'srm' not in sig(res['IP random 5\\%'])                         # "SRM, tied best on random 5% IP"
+assert all(3 <= ci_width[c] <= 4.5 for c in ['PU disjoint', 'KSC disjoint'])   # "about two points"
+
+a = vals(abl, 'IndianPines', 'snsm', 'AA')
+macros.append(mac('ablMeanDrop', f"{(a - vals(abl, 'IndianPines', 'snsm_mean', 'AA')).mean():.2f}"))
+assert ((vals(abl, 'IndianPines', 'snsm_noinit', 'AA') - a) < 0).all()   # "lower on all five seeds"
+
+e = eff[eff.dataset == 'IndianPines'].set_index('model')
+extra = (e.params - e.params['plain']).drop('plain')
+blk = extra[[m for m in BLOCKS if m != 'plain']]
+assert blk.idxmin() == 'eca_gamma' and blk.idxmax() == 'se_gamma'
+macros += [mac('paramsEca', int(blk.min())), mac('paramsSe', thousands(blk.max())), mac('paramsSnsm', int(extra['snsm'])),
+           mac('latencyRatio', f"{e.latency_ms['snsm'] / e.latency_ms['plain']:.1f}"),
+           mac('trainRatio', f"{ipr[ipr.model == 'snsm'].train_time_s.mean() / ipr[ipr.model == 'plain'].train_time_s.mean():.1f}")]
+
 ip_oa = [vals(runs, 'IndianPines', m, 'OA').mean() for m in BLOCKS]
 macros.append(mac('ipRandOAspread', f'{np.ptp(ip_oa):.2f}'))
 macros.append(mac('nseedsIP', vals(runs, 'IndianPines', 'snsm', 'AA').size))

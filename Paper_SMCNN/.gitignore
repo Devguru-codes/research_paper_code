@@ -36,3 +36,6 @@ saved_models/
 
 # Raw Kaggle downloads (merged results live in experiments/results/)
 experiments/kaggle_raw/
+
+# Claude Code session worktrees (separate checkouts, never part of the repo)
+.claude/
