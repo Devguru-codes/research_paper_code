@@ -246,6 +246,7 @@ other = max(np.ptp([vals(runs, d, m, 'AA').mean() for m in BLOCKS]) for d in ['P
 macros.append(mac('randOtherSpread', f'{other:.2f}'))
 P1 = ['plain', 'se_gamma', 'eca_gamma', 'cbam', 'fc_gamma_beta', 'snsm_gamma', 'snsm']   # variants also run before the KSC fix
 k = [vals(runs, 'KSC', m, 'AA').mean() for m in P1]
+assert min(k) > 99                         # "raises seven convolutional variants ... to over 99% AA"
 macros.append(mac('kscFixedRange', rng(min(k), max(k), 1)))
 
 ipr = runs[(runs.dataset == 'IndianPines') & runs.seed.isin(range(42, 57))]
