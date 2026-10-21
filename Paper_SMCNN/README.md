@@ -12,6 +12,8 @@ under three evaluation protocols, with paired seeds and Holm-corrected Wilcoxon 
 Paper_SMCNN/
 ├── paper/                              Manuscript (Taylor & Francis Interact template)
 │   ├── snsm_rsl.tex / snsm_rsl.pdf     source and compiled paper
+│   ├── supplement.tex / supplement.pdf supplementary tables and the SNSM block diagram
+│   ├── cover_letter.tex / .pdf         cover letter to the editor
 │   ├── refs.bib                        references (DOIs checked against Crossref)
 │   ├── interact.cls, tfcad.bst         T&F class and Chicago author-date style
 │   ├── tables/                         generated LaTeX tables and inline numbers
@@ -24,6 +26,7 @@ Paper_SMCNN/
 │   ├── phase5_standard_splits.ipynb    standard fixed Indian Pines split (SpectralFormer)
 │   ├── phase6_matched_counts.ipynb     random IP split with the standard split's class counts (50/15)
 │   ├── phase7_class_scarcity.ipynb     only the three smallest classes changed: IP to 15 pixels, PU/KSC to 1/1/2
+│   ├── phase8_robustness.ipynb         WHU-Hi, deeper host network, learning rates, train-only PCA, hardest-class scarcity
 │   ├── results/                        one row per run (see below), efficiency, ground truths
 │   ├── make_paper_tables.py            writes paper/tables/ from results/
 │   ├── make_paper_figures.py           writes paper/figures/ from results/

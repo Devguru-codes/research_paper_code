@@ -8,6 +8,7 @@ import os
 
 import numpy as np
 import pandas as pd
+from scipy.stats import t as t_dist
 from scipy.stats import wilcoxon
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -32,7 +33,9 @@ cnt = pd.read_csv(os.path.join(FINAL, 'phase6_counts_runs.csv'))    # random IP 
 DJ_SETS = ['PaviaU', 'KSC']
 # Indian Pines protocols: random 5%, random with the standard split's class counts, standard fixed split
 # (region-separated, but every test patch overlaps a training patch at 15x15).
-IP_PROTOCOLS = [('Random 5\\%', runs), ('Random, 50/15 per class', cnt), ('Standard split', std)]
+sc = pd.read_csv(os.path.join(FINAL, 'phase7_scarcity_runs.csv'))       # only the 3 smallest classes changed
+IP_PROTOCOLS = [('Random 5\\%', runs), ('Random, smallest 15', sc[sc.study == 'smallfix']),
+                ('Random, 50/15', cnt), ('Standard split', std)]
 
 
 def vals(df, ds, m, col):
@@ -61,38 +64,68 @@ def holm(p):
 assert np.allclose(holm(np.array([0.01, 0.04, 0.03])), [0.03, 0.06, 0.06])
 
 
-def boot_ci(d, n=10000):
-    # 95% percentile bootstrap interval of the mean paired difference (fixed generator, reproducible).
-    m = np.random.RandomState(0).choice(d, size=(n, len(d)), replace=True).mean(1)
-    return np.percentile(m, [2.5, 97.5])
+MARGIN = 1.0   # equivalence margin (AA points) for the TOST equivalence test
 
 
-_lo, _hi = boot_ci(np.array([1.0, 2.0, 3.0, 4.0]))
-assert _lo <= 2.5 <= _hi and 1.0 <= _lo and _hi <= 4.0
+def t_ci(d, level=0.95):
+    # Student-t interval of the mean paired difference.
+    h = t_dist.ppf(0.5 + level / 2, len(d) - 1) * d.std(ddof=1) / np.sqrt(len(d))
+    return d.mean() - h, d.mean() + h
+
+
+assert np.allclose(t_ci(np.array([1.0, 2.0, 3.0, 4.0])), (2.5 - 3.182446 * 0.645497, 2.5 + 3.182446 * 0.645497))
+
+
+def equivalent(d):
+    # Paired TOST at alpha = 0.05: equivalent within +-MARGIN if the 90% t interval lies inside (-MARGIN, MARGIN).
+    lo, hi = t_ci(d, 0.90)
+    return -MARGIN < lo and hi < MARGIN
+
+
+all_p = []   # raw Wilcoxon p-values of every reported comparison, for a global Benjamini-Hochberg check
 
 
 def paired(df, ds, col):
-    # SNSM (gamma+beta) minus each baseline on shared seeds: mean, 95% CI, wins, n, Holm-adjusted Wilcoxon p
-    # (Holm family = the seven comparisons of one scene and protocol).
+    # SNSM (gamma+beta) minus each baseline on shared seeds: mean, 95% t interval, wins, n, Holm-adjusted Wilcoxon p
+    # (Holm family = the seven comparisons of one scene and protocol), raw p, equivalence within +-MARGIN.
     ref = vals(df, ds, 'snsm', col)
     diffs = [(ref - vals(df, ds, m, col)).dropna() for m in BASES]
     assert all(len(d) == len(ref) for d in diffs), f'{ds}: a block is missing seeds that SNSM has'
-    p = holm(np.array([wilcoxon(d).pvalue for d in diffs]))
-    return {m: (d.mean(), boot_ci(d.to_numpy()), int((d > 0).sum()), len(d), pv) for m, d, pv in zip(BASES, diffs, p)}
+    raw = np.array([wilcoxon(d).pvalue for d in diffs])
+    p = holm(raw)
+    if col == 'AA':
+        all_p.extend(raw)
+    return {m: (d.mean(), t_ci(d.to_numpy()), int((d > 0).sum()), len(d), pv, pr, equivalent(d.to_numpy()))
+            for m, d, pv, pr in zip(BASES, diffs, p, raw)}
 
 
-# Table: random 5% splits, OA / AA on the four core scenes (best mean per column in bold)
-lines = [r'\begin{tabular}{l' + 'cc' * len(CORE) + '}', r'\toprule',
-         'Method & ' + ' & '.join(f'\\multicolumn{{2}}{{c}}{{{SHORT[d]}}}' for d in CORE) + r' \\',
-         ' & ' + ' & '.join(['OA & AA'] * len(CORE)) + r' \\', r'\midrule']
-best = {(d, c): max(vals(runs, d, m, c).mean() for m in LABELS if len(vals(runs, d, m, c))) for d in CORE for c in ['OA', 'AA']}
-for m in LABELS:
-    if m == 'fc_gamma_beta':
-        lines.append(r'\midrule')
-    cells = [fmt(v, best[(d, c)]) if len(v := vals(runs, d, m, c)) else '--' for d in CORE for c in ['OA', 'AA']]
-    lines.append(LABELS[m] + ' & ' + ' & '.join(cells) + r' \\')
-lines += [r'\bottomrule', r'\end{tabular}']
-write('main.tex', lines)
+def bh_count(p, q=0.05):
+    # Number of discoveries under Benjamini-Hochberg at false discovery rate q.
+    p = np.sort(np.asarray(p))
+    ok = np.nonzero(p <= q * np.arange(1, len(p) + 1) / len(p))[0]
+    return 0 if len(ok) == 0 else int(ok[-1]) + 1
+
+
+assert bh_count([0.001, 0.02, 0.04, 0.9]) == 2 and bh_count([0.001, 0.02, 0.03, 0.9]) == 3 and bh_count([0.5, 0.6]) == 0
+
+
+# Table: random 5% splits, OA / AA on the four core scenes (best mean per column in bold).
+# The paper shows the eight backbone variants; the supplement adds FC (gamma+beta), HybridSN and SSFTT.
+def main_table(models, name):
+    lines = [r'\begin{tabular}{l' + 'cc' * len(CORE) + '}', r'\toprule',
+             'Method & ' + ' & '.join(f'\\multicolumn{{2}}{{c}}{{{SHORT[d]}}}' for d in CORE) + r' \\',
+             ' & ' + ' & '.join(['OA & AA'] * len(CORE)) + r' \\', r'\midrule']
+    best = {(d, c): max(vals(runs, d, m, c).mean() for m in models if len(vals(runs, d, m, c))) for d in CORE for c in ['OA', 'AA']}
+    for m in models:
+        if m == 'fc_gamma_beta':
+            lines.append(r'\midrule')
+        cells = [fmt(v, best[(d, c)]) if len(v := vals(runs, d, m, c)) else '--' for d in CORE for c in ['OA', 'AA']]
+        lines.append(LABELS[m] + ' & ' + ' & '.join(cells) + r' \\')
+    write(name, lines + [r'\bottomrule', r'\end{tabular}'])
+
+
+main_table(BLOCKS, 'main.tex')
+main_table(list(LABELS), 'supp_main.tex')
 
 def block_table(cols, header, name):
     # cols: list of (dataframe, scene, metric); bold = best block mean per column; last row = range of block means
@@ -116,41 +149,45 @@ dj_spread = block_table(dj_cols, ['Block & ' + ' & '.join(f'\\multicolumn{{3}}{{
                                   ' & ' + ' & '.join(['AA, random & OA, disjoint & AA, disjoint'] * len(DJ_SETS)) + r' \\'],
                         'protocol_dj.tex')
 
-# Table: paired SNSM (gamma+beta) - block AA differences with 95% bootstrap CI; * = Holm-adjusted p < 0.05
-P_COLS = [('IP random 5\\%', runs, 'IndianPines'), ('IP random 50/15', cnt, 'IndianPines'),
-          ('IP standard', std, 'IndianPines'), ('PU disjoint', dj, 'PaviaU'), ('KSC disjoint', dj, 'KSC')]
-res = {name: paired(df, d, 'AA') for name, df, d in P_COLS}
-lines = [r'\begin{tabular}{l' + 'c' * len(P_COLS) + '}', r'\toprule',
-         r'SNSM ($\gamma{+}\beta$) $-$ & ' + ' & '.join(name for name, _, _ in P_COLS) + r' \\', r'\midrule']
-for m in BASES:
-    cells = []
-    for name, _, _ in P_COLS:
-        mu, (lo, hi), w, n, pv = res[name][m]
-        cells.append(f'{mu:+.2f}{"$^{*}$" if pv < 0.05 else ""} [{lo:+.1f}, {hi:+.1f}]')
-    lines.append(LABELS[m] + ' & ' + ' & '.join(cells) + r' \\')
-lines += [r'\bottomrule', r'\end{tabular}']
-write('paired.tex', lines)
-n_sig = {name: sum(r[4] < 0.05 for r in res[name].values()) for name in res}
-ci_width = {name: np.median([r[1][1] - r[1][0] for r in res[name].values()]) for name in res}
-
-# Phase 7: change only the three smallest classes of a random 5% split
-sc = pd.read_csv(os.path.join(FINAL, 'phase7_scarcity_runs.csv'))
+# Phase 7: change only the three smallest classes of a random 5% split (AA table goes to the supplement)
 SC_COLS = [('IP, 5\\%', runs, 'IndianPines'), ('IP, smallest 15', sc[sc.study == 'smallfix'], 'IndianPines'),
            ('PU, 5\\%', runs, 'PaviaU'), ('PU, smallest 1/1/2', sc[sc.study == 'scarce'], 'PaviaU'),
            ('KSC, 5\\%', runs, 'KSC'), ('KSC, smallest 1/1/2', sc[sc.study == 'scarce'], 'KSC')]
 sc_spread = block_table([(df, d, 'AA') for _, df, d in SC_COLS],
-                        ['Block & ' + ' & '.join(n for n, _, _ in SC_COLS) + r' \\'], 'scarcity.tex')
-sres = {name: paired(df, d, 'AA') for name, df, d in SC_COLS[1::2]}
-lines = [r'\begin{tabular}{l' + 'c' * len(sres) + '}', r'\toprule',
-         r'SNSM ($\gamma{+}\beta$) $-$ & ' + ' & '.join(sres) + r' \\', r'\midrule']
-for m in BASES:
-    cells = []
-    for name in sres:
-        mu, (lo, hi), w, n, pv = sres[name][m]
-        cells.append(f'{mu:+.2f}{"$^{*}$" if pv < 0.05 else ""} [{lo:+.1f}, {hi:+.1f}]')
-    lines.append(LABELS[m] + ' & ' + ' & '.join(cells) + r' \\')
-lines += [r'\bottomrule', r'\end{tabular}']
-write('paired_scarcity.tex', lines)
+                        ['Block & ' + ' & '.join(n for n, _, _ in SC_COLS) + r' \\'], 'supp_scarcity.tex')
+
+# Paired SNSM (gamma+beta) - block differences: one row per setting, one column per block.
+# * = Holm-corrected Wilcoxon p < 0.05 within the row; dagger = equivalent within +-MARGIN (paired TOST).
+SETTINGS = [('IP, random 5\\%', runs, 'IndianPines'), ('IP, random 50/15', cnt, 'IndianPines'),
+            ('IP, smallest 15', sc[sc.study == 'smallfix'], 'IndianPines'), ('IP, standard', std, 'IndianPines'),
+            ('PU, smallest 1/1/2', sc[sc.study == 'scarce'], 'PaviaU'),
+            ('KSC, smallest 1/1/2', sc[sc.study == 'scarce'], 'KSC'),
+            ('PU, patch-disjoint', dj, 'PaviaU'), ('KSC, patch-disjoint', dj, 'KSC')]
+SHORT_BLOCK = {'plain': 'Plain', 'se_gamma': 'SE', 'eca_gamma': 'ECA', 'cbam': 'CBAM', 'gct': 'GCT', 'srm': 'SRM',
+               'snsm_gamma': r'SNSM ($\gamma$)'}
+res = {name: paired(df, d, 'AA') for name, df, d in SETTINGS}
+res_oa = {name: paired(df, d, 'OA') for name, df, d in SETTINGS}
+
+
+def mark(v):
+    return ('$^{*}$' if v[4] < 0.05 else '') + ('$^{\\dagger}$' if v[6] else '')
+
+
+def paired_table(r, cell, name):
+    lines = [r'\begin{tabular}{l' + 'c' * len(BASES) + 'c}', r'\toprule',
+             'Setting & ' + ' & '.join(SHORT_BLOCK[m] for m in BASES) + r' & Seeds \\', r'\midrule']
+    for s, _, _ in SETTINGS:
+        lines.append(s + ' & ' + ' & '.join(cell(r[s][m]) for m in BASES) + f' & {r[s][BASES[0]][3]}' + r' \\')
+    lines += [r'\bottomrule', r'\end{tabular}']
+    write(name, lines)
+
+
+paired_table(res, lambda v: f'{v[0]:+.2f}{mark(v)}', 'paired.tex')
+paired_table(res, lambda v: f'{v[0]:+.2f} [{v[1][0]:+.1f}, {v[1][1]:+.1f}]', 'supp_paired_ci.tex')
+paired_table(res_oa, lambda v: f'{v[0]:+.2f}{mark(v)}', 'supp_paired_oa.tex')
+n_sig = {s: sum(v[4] < 0.05 for v in res[s].values()) for s in res}
+n_eq = {s: sum(v[6] for v in res[s].values()) for s in res}
+ci_width = {s: np.median([v[1][1] - v[1][0] for v in res[s].values()]) for s in res}
 
 # Table: SNSM descriptor / initialisation ablation on IP (random 5%)
 ABL = [('snsm', 'mean, var, grad (SNSM)'), ('snsm_mean', 'mean'), ('snsm_mean_var', 'mean, var'),
@@ -166,7 +203,7 @@ write('ablation.tex', lines)
 
 # Table: efficiency (IP input: 60 features, 15x15 patch) and mean training time on the random splits
 lines = [r'\begin{tabular}{lrrrrr}', r'\toprule',
-         r'Method & Params (M) & MMACs$^{a}$ & Latency (ms)$^{b}$ & Train IP (s) & Train PU (s) \\', r'\midrule']
+         r'Method & Params (M) & MMACs & Latency (ms) & Train IP (s) & Train PU (s) \\', r'\midrule']
 for m in LABELS:
     e = eff[(eff.model == m) & (eff.dataset == 'IndianPines')].iloc[0]
     t = {d: runs[(runs.dataset == d) & (runs.model == m)].train_time_s.mean() for d in ['IndianPines', 'PaviaU']}
@@ -174,7 +211,7 @@ for m in LABELS:
     lines.append(f"{LABELS[m]} & {e.params / 1e6:.3f} & {e.macs_convlinear / 1e6:.1f} & "
                  f"{e.latency_ms:.2f} & {t['IndianPines']:.1f} & {tpu} \\\\")
 lines += [r'\bottomrule', r'\end{tabular}']
-write('efficiency.tex', lines)
+write('supp_efficiency.tex', lines)
 
 # Table: datasets. Sensor, band count and ground sample distance are the published scene properties;
 # size, classes and labelled pixels are read from the ground truth.
@@ -218,15 +255,15 @@ for i, d in enumerate(DJ_SETS):   # mean AA drop from random to patch-disjoint, 
     drop = np.mean([vals(runs, d, m, 'AA').mean() - vals(dj, d, m, 'AA').mean() for m in BLOCKS])
     macros.append(mac(f'drop{SHORT[d]}', f'{drop:.1f}'))
     macros.append(mac(f'spreadDJ{SHORT[d]}', f'{dj_spread[3 * i + 2]:.2f}'))
-for (name, _), key in zip(IP_PROTOCOLS, ['Rand', 'Cnt', 'Std']):
+for (name, _), key in zip(IP_PROTOCOLS, ['Rand', 'Small', 'Cnt', 'Std']):
     macros.append(mac(f'spreadIP{key}', f'{ip_spread[[n for n, _ in IP_PROTOCOLS].index(name)]:.2f}'))
-for name, key in zip(res, ['IPrand', 'IPcnt', 'IPstd', 'PUdj', 'KSCdj']):
+for name, key in [('IP, random 5\\%', 'IPrand'), ('IP, random 50/15', 'IPcnt'), ('IP, standard', 'IPstd'),
+                  ('PU, patch-disjoint', 'PUdj'), ('KSC, patch-disjoint', 'KSCdj'), ('IP, smallest 15', 'IPsmall'),
+                  ('PU, smallest 1/1/2', 'PUscarce'), ('KSC, smallest 1/1/2', 'KSCscarce')]:
     macros.append(mac(f'nsig{key}', n_sig[name]))
     macros.append(mac(f'ciw{key}', f'{ci_width[name]:.1f}'))
 for (name, _, _), key, sp in zip(SC_COLS, ['IPfive', 'IPsmall', 'PUfive', 'PUscarce', 'KSCfive', 'KSCscarce'], sc_spread):
     macros.append(mac(f'spreadSC{key}', f'{sp:.2f}'))
-for name, key in zip(sres, ['IPsmall', 'PUscarce', 'KSCscarce']):
-    macros.append(mac(f'nsig{key}', sum(r[4] < 0.05 for r in sres[name].values())))
 # Numbers and claims written in the paper's text. Numbers become macros; qualitative claims (which blocks
 # are significant, lowest, highest) are asserted, so a data change breaks this script instead of the text.
 def sig(r):
@@ -237,7 +274,7 @@ def rng(a, b, d=2):
     return f'{a:.{d}f}--{b:.{d}f}'
 
 
-r = res['IP random 5\\%']
+r = res['IP, random 5\\%']
 assert sig(r) == {'plain', 'se_gamma', 'eca_gamma', 'cbam', 'gct'}, sig(r)
 g = sorted(r[m][0] for m in sig(r))
 macros += [mac('ipRandGain', rng(g[0], g[-1])), mac('ipRandGainShort', rng(g[0], g[-1], 1)),
@@ -260,13 +297,13 @@ macros.append(mac('pcAlfalfaSpread', f'{np.ptp([pc[m][0] for m in BLOCKS]):.1f}'
 rest13 = [np.mean(np.delete(pc[m], [0, 6, 8])) for m in BLOCKS]
 assert np.ptp(rest13) < 1, rest13          # "differs by less than one point"
 
-ci_max = max(max(abs(v[1][0]), abs(v[1][1])) for v in res['IP random 50/15'].values())
-assert sig(res['IP random 50/15']) == set()
+ci_max = max(max(abs(v[1][0]), abs(v[1][1])) for v in res['IP, random 50/15'].values())
+assert sig(res['IP, random 50/15']) == set()
 macros.append(mac('cntCImax', f'{np.ceil(ci_max * 10) / 10:.1f}'))
-assert sig(res['IP standard']) == {'eca_gamma'}
-macros.append(mac('stdEcaDiff', f"{res['IP standard']['eca_gamma'][0]:.2f}"))
+assert sig(res['IP, standard']) == {'eca_gamma'}
+macros.append(mac('stdEcaDiff', f"{res['IP, standard']['eca_gamma'][0]:.2f}"))
 
-r = sres['IP, smallest 15']
+r = res['IP, smallest 15']
 assert sig(r) == set(BASES)
 g = sorted(v[0] for v in r.values())
 macros += [mac('smallGain', rng(g[0], g[-1])), mac('spreadSCIPsmallShort', f'{sc_spread[1]:.1f}')]
@@ -276,24 +313,25 @@ for d, key in [('PaviaU', 'PU'), ('KSC', 'KSC')]:
     drop = np.mean([vals(runs, d, m, 'AA').mean() - s[s.model == m].AA.mean() for m in BLOCKS])
     macros.append(mac(f'dropScarce{key}', f'{drop:.0f}'))
 means = sc[(sc.study == 'scarce') & (sc.dataset == 'PaviaU')].groupby('model').AA.mean()
-assert means.idxmin() == 'snsm' and sig(sres['PU, smallest 1/1/2']) == {'eca_gamma', 'snsm_gamma'}
+assert means.idxmin() == 'snsm' and sig(res['PU, smallest 1/1/2']) == {'eca_gamma', 'snsm_gamma'}
 means = sc[(sc.study == 'scarce') & (sc.dataset == 'KSC')].groupby('model').AA.mean()
-assert means.idxmin() == 'srm' and sig(sres['KSC, smallest 1/1/2']) == set()
+assert means.idxmin() == 'srm' and sig(res['KSC, smallest 1/1/2']) == set()
 
 drops = []
 for d in DJ_SETS:
     oa = [vals(dj, d, m, 'OA').mean() for m in BLOCKS]
     macros.append(mac(f'djOA{SHORT[d]}', rng(min(oa), max(oa), 0)))
     drops.append(np.mean([vals(runs, d, m, 'AA').mean() - vals(dj, d, m, 'AA').mean() for m in BLOCKS]))
-assert min(drops) > 30                    # "every block lost more than 30 AA points"
+assert min(vals(runs, d, m, 'AA').mean() - vals(dj, d, m, 'AA').mean()
+           for d in DJ_SETS for m in BLOCKS) > 30   # "every block lost more than 30 AA points"
 macros.append(mac('dropRange', rng(min(drops), max(drops), 0)))
 sd = [vals(dj, d, m, 'AA').std(ddof=1) for d in DJ_SETS for m in BLOCKS]
 macros.append(mac('djStdRange', rng(min(sd), max(sd), 1)))
-assert sig(res['PU disjoint']) == set() and sig(res['KSC disjoint']) == {'plain', 'gct', 'srm'}
+assert sig(res['PU, patch-disjoint']) == set() and sig(res['KSC, patch-disjoint']) == {'plain', 'gct', 'srm'}
 ksc = dj[dj.dataset == 'KSC'].groupby('model').AA.mean()
 assert ksc.idxmax() == 'se_gamma' and ksc.idxmin() == 'srm'
-assert 'srm' not in sig(res['IP random 5\\%'])                         # "SRM, tied best on random 5% IP"
-assert all(3 <= ci_width[c] <= 4.5 for c in ['PU disjoint', 'KSC disjoint'])   # "about two points"
+assert 'srm' not in sig(res['IP, random 5\\%'])                         # "SRM, tied best on random 5% IP"
+assert all(3 <= ci_width[c] <= 4.5 for c in ['PU, patch-disjoint', 'KSC, patch-disjoint'])   # "about two points"
 
 a = vals(abl, 'IndianPines', 'snsm', 'AA')
 macros.append(mac('ablMeanDrop', f"{(a - vals(abl, 'IndianPines', 'snsm_mean', 'AA')).mean():.2f}"))
@@ -306,6 +344,20 @@ assert blk.idxmin() == 'eca_gamma' and blk.idxmax() == 'se_gamma'
 macros += [mac('paramsEca', int(blk.min())), mac('paramsSe', thousands(blk.max())), mac('paramsSnsm', int(extra['snsm'])),
            mac('latencyRatio', f"{e.latency_ms['snsm'] / e.latency_ms['plain']:.1f}"),
            mac('trainRatio', f"{ipr[ipr.model == 'snsm'].train_time_s.mean() / ipr[ipr.model == 'plain'].train_time_s.mean():.1f}")]
+
+# Equivalence (TOST, +-MARGIN) and global false-discovery-rate claims
+for s in ['IP, random 50/15', 'IP, standard', 'IP, smallest 15']:
+    assert n_eq[s] == len(BASES), (s, n_eq[s])            # "all seven comparisons equivalent within +-1"
+for s in ['PU, patch-disjoint', 'KSC, patch-disjoint']:
+    assert n_eq[s] == 0, (s, n_eq[s])                      # "equivalence cannot be shown on patch-disjoint splits"
+assert n_eq['IP, random 5\\%'] == 0
+seed_sd = np.median([vals(runs, 'IndianPines', m, 'AA').std(ddof=1) for m in BLOCKS])
+assert MARGIN < seed_sd / 2, seed_sd                       # "less than half the seed-to-seed standard deviation"
+macros += [mac('margin', f'{MARGIN:.0f}'), mac('seedSdIP', f'{seed_sd:.1f}'),
+           mac('bhSig', bh_count(all_p)), mac('bhTotal', len(all_p)),
+           mac('holmSig', sum(n_sig.values())), mac('nSettings', len(SETTINGS))]
+for s, key in [('PU, smallest 1/1/2', 'PUscarce'), ('KSC, smallest 1/1/2', 'KSCscarce')]:
+    macros.append(mac(f'neq{key}', n_eq[s]))
 
 ip_oa = [vals(runs, 'IndianPines', m, 'OA').mean() for m in BLOCKS]
 macros.append(mac('ipRandOAspread', f'{np.ptp(ip_oa):.2f}'))
