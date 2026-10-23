@@ -41,6 +41,7 @@ Paper_SMCNN/
 - `phase5_std_runs.csv` — standard Indian Pines split, seeds 42-56
 - `phase6_counts_runs.csv` — random Indian Pines split with 15 training pixels for the three smallest classes and 50 for the others, seeds 42-56
 - `phase7_scarcity_runs.csv` — random 5% splits with only the three smallest classes changed (`smallfix`: IP to 15 pixels; `scarce`: PU and KSC to 1/1/2), seeds 42-56
+- `phase8_runs.csv` — robustness studies (column `study`): WHU-Hi random and patch-disjoint (seeds 42-51), deeper host on IP random and KSC patch-disjoint (models prefixed `deep_`, seeds 42-51), learning rates 3e-4 and 3e-3 on IP random (seeds 42-46), train-only PCA on KSC patch-disjoint and hardest-class scarcity on PU and KSC (seeds 42-56)
 - `efficiency.csv` — parameters, MACs and latency on an IP patch
 
 ### How `results/` was assembled
@@ -65,6 +66,10 @@ ran a notebook, sometimes restricted to some datasets or seeds; their `runs.csv`
 | `phase6_counts_runs.csv` | IP random 50/15, seeds 42-56 | `matched-counts-ip` (Phase 6) |
 | `phase7_scarcity_runs.csv` | IP `smallfix` and KSC `scarce`, seeds 42-56 | `scarcity-ip-ksc` (Phase 7) |
 | | PU `scarce`, seeds 42-56 | `scarcity-pu` (Phase 7) |
+| `phase8_runs.csv` | `whu_random` | `p8-whu-random` (Phase 8) |
+| | `whu_disjoint` | `p8-whu-disjoint` (Phase 8) |
+| | deeper host, learning rates, train-only PCA, `hard_ksc` | `p8-misc` (Phase 8) |
+| | `hard_pu` | `p8-hard-pu` (Phase 8) |
 
 Before any notebook is changed, run `python experiments/check_notebooks.py`: it fails if the copies of the shared
 data loader and training loop differ between notebooks.

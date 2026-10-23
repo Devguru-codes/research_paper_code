@@ -21,7 +21,7 @@ LABELS = {'plain': 'Plain CNN', 'se_gamma': r'SE ($\gamma$)', 'eca_gamma': r'ECA
           'fc_gamma_beta': r'FC ($\gamma{+}\beta$)', 'hybridsn': 'HybridSN', 'ssftt': 'SSFTT'}
 BLOCKS = ['plain', 'se_gamma', 'eca_gamma', 'cbam', 'gct', 'srm', 'snsm_gamma', 'snsm']
 BASES = BLOCKS[:-1]
-SHORT = {'IndianPines': 'IP', 'KSC': 'KSC', 'PaviaU': 'PU', 'Botswana': 'BW'}
+SHORT = {'IndianPines': 'IP', 'KSC': 'KSC', 'PaviaU': 'PU', 'Botswana': 'BW', 'WHU_Hi_HanChuan': 'WHU'}
 CORE = ['IndianPines', 'KSC', 'PaviaU', 'Botswana']
 
 runs = pd.read_csv(os.path.join(FINAL, 'runs.csv'))                      # random 5% splits
@@ -30,7 +30,18 @@ abl = pd.read_csv(os.path.join(FINAL, 'phase2_runs.csv')).query("study == 'ablat
 dj = pd.read_csv(os.path.join(FINAL, 'phase3_disjoint_runs.csv'))         # patch-disjoint 5% splits
 std = pd.read_csv(os.path.join(FINAL, 'phase5_std_runs.csv')).replace({'dataset': {'Indian': 'IndianPines'}})
 cnt = pd.read_csv(os.path.join(FINAL, 'phase6_counts_runs.csv'))    # random IP split, standard class counts
-DJ_SETS = ['PaviaU', 'KSC']
+p8 = pd.read_csv(os.path.join(FINAL, 'phase8_runs.csv'))              # Phase 8 robustness studies
+p8['model'] = p8.model.str.replace('deep_', '', regex=False)           # deeper host: same block names
+
+
+def p8s(study):
+    return p8[p8.study == study]
+
+
+DJ_SETS = ['PaviaU', 'KSC', 'WHU_Hi_HanChuan']
+# Random and patch-disjoint frames per scene (WHU-Hi with all blocks comes from Phase 8)
+RAND = {'PaviaU': runs, 'KSC': runs, 'WHU_Hi_HanChuan': p8s('whu_random')}
+DISJ = {'PaviaU': dj, 'KSC': dj, 'WHU_Hi_HanChuan': p8s('whu_disjoint')}
 # Indian Pines protocols: random 5%, random with the standard split's class counts, standard fixed split
 # (region-separated, but every test patch overlaps a training patch at 15x15).
 sc = pd.read_csv(os.path.join(FINAL, 'phase7_scarcity_runs.csv'))       # only the 3 smallest classes changed
@@ -144,7 +155,7 @@ def block_table(cols, header, name):
 ip_spread = block_table([(df, 'IndianPines', 'AA') for _, df in IP_PROTOCOLS],
                         ['Block & ' + ' & '.join(n for n, _ in IP_PROTOCOLS) + r' \\'], 'protocol_ip.tex')
 # Table: PU and KSC, random vs patch-disjoint
-dj_cols = [(df, d, c) for d in DJ_SETS for df, c in [(runs, 'AA'), (dj, 'OA'), (dj, 'AA')]]
+dj_cols = [(df, d, c) for d in DJ_SETS for df, c in [(RAND[d], 'AA'), (DISJ[d], 'OA'), (DISJ[d], 'AA')]]
 dj_spread = block_table(dj_cols, ['Block & ' + ' & '.join(f'\\multicolumn{{3}}{{c}}{{{SHORT[d]}}}' for d in DJ_SETS) + r' \\',
                                   ' & ' + ' & '.join(['AA, random & OA, disjoint & AA, disjoint'] * len(DJ_SETS)) + r' \\'],
                         'protocol_dj.tex')
@@ -156,17 +167,34 @@ SC_COLS = [('IP, 5\\%', runs, 'IndianPines'), ('IP, smallest 15', sc[sc.study ==
 sc_spread = block_table([(df, d, 'AA') for _, df, d in SC_COLS],
                         ['Block & ' + ' & '.join(n for n, _, _ in SC_COLS) + r' \\'], 'supp_scarcity.tex')
 
+# Phase 8 AA per block (supplement)
+P8_COLS = [('IP, deeper', 'deep_ip_random', 'IndianPines'), ('KSC disj., deeper', 'deep_ksc_disjoint', 'KSC'),
+           ('KSC disj., train PCA', 'trainpca_ksc_disjoint', 'KSC'), ('PU, hardest', 'hard_pu', 'PaviaU'),
+           ('KSC, hardest', 'hard_ksc', 'KSC'), ('IP, lr 3e-4', 'lr3e-4_ip_random', 'IndianPines'),
+           ('IP, lr 3e-3', 'lr3e-3_ip_random', 'IndianPines')]
+block_table([(p8s(st), d, 'AA') for _, st, d in P8_COLS],
+            ['Block & ' + ' & '.join(n for n, _, _ in P8_COLS) + r' \\'], 'supp_robust.tex')
+
 # Paired SNSM (gamma+beta) - block differences: one row per setting, one column per block.
 # * = Holm-corrected Wilcoxon p < 0.05 within the row; dagger = equivalent within +-MARGIN (paired TOST).
-SETTINGS = [('IP, random 5\\%', runs, 'IndianPines'), ('IP, random 50/15', cnt, 'IndianPines'),
-            ('IP, smallest 15', sc[sc.study == 'smallfix'], 'IndianPines'), ('IP, standard', std, 'IndianPines'),
+RULE = (None, None, None)   # a horizontal rule between groups of settings
+SETTINGS = [('IP, random 5\\%', runs, 'IndianPines'), ('IP, smallest 15', sc[sc.study == 'smallfix'], 'IndianPines'),
+            ('IP, random 50/15', cnt, 'IndianPines'), ('IP, standard', std, 'IndianPines'), RULE,
             ('PU, smallest 1/1/2', sc[sc.study == 'scarce'], 'PaviaU'),
             ('KSC, smallest 1/1/2', sc[sc.study == 'scarce'], 'KSC'),
-            ('PU, patch-disjoint', dj, 'PaviaU'), ('KSC, patch-disjoint', dj, 'KSC')]
+            ('PU, hardest 1/1/2', p8s('hard_pu'), 'PaviaU'), ('KSC, hardest 1/1/2', p8s('hard_ksc'), 'KSC'), RULE,
+            ('WHU, random 5\\%', p8s('whu_random'), 'WHU_Hi_HanChuan'),
+            ('PU, patch-disjoint', dj, 'PaviaU'), ('KSC, patch-disjoint', dj, 'KSC'),
+            ('WHU, patch-disjoint', p8s('whu_disjoint'), 'WHU_Hi_HanChuan'), RULE,
+            ('IP, random 5\\%, deeper host', p8s('deep_ip_random'), 'IndianPines'),
+            ('KSC, patch-disjoint, deeper host', p8s('deep_ksc_disjoint'), 'KSC'),
+            ('KSC, patch-disjoint, train-only PCA', p8s('trainpca_ksc_disjoint'), 'KSC'),
+            ('IP, random 5\\%, lr $3\\times10^{-4}$', p8s('lr3e-4_ip_random'), 'IndianPines'),
+            ('IP, random 5\\%, lr $3\\times10^{-3}$', p8s('lr3e-3_ip_random'), 'IndianPines')]
 SHORT_BLOCK = {'plain': 'Plain', 'se_gamma': 'SE', 'eca_gamma': 'ECA', 'cbam': 'CBAM', 'gct': 'GCT', 'srm': 'SRM',
                'snsm_gamma': r'SNSM ($\gamma$)'}
-res = {name: paired(df, d, 'AA') for name, df, d in SETTINGS}
-res_oa = {name: paired(df, d, 'OA') for name, df, d in SETTINGS}
+res = {name: paired(df, d, 'AA') for name, df, d in SETTINGS if name}
+res_oa = {name: paired(df, d, 'OA') for name, df, d in SETTINGS if name}
 
 
 def mark(v):
@@ -177,6 +205,9 @@ def paired_table(r, cell, name):
     lines = [r'\begin{tabular}{l' + 'c' * len(BASES) + 'c}', r'\toprule',
              'Setting & ' + ' & '.join(SHORT_BLOCK[m] for m in BASES) + r' & Seeds \\', r'\midrule']
     for s, _, _ in SETTINGS:
+        if s is None:
+            lines.append(r'\midrule')
+            continue
         lines.append(s + ' & ' + ' & '.join(cell(r[s][m]) for m in BASES) + f' & {r[s][BASES[0]][3]}' + r' \\')
     lines += [r'\bottomrule', r'\end{tabular}']
     write(name, lines)
@@ -218,7 +249,8 @@ write('supp_efficiency.tex', lines)
 SCENES = [('IndianPines', 'Indian Pines (IP)', 'AVIRIS', 200, '20'),
           ('PaviaU', 'Pavia University (PU)', 'ROSIS', 103, '1.3'),
           ('KSC', 'Kennedy Space Center (KSC)', 'AVIRIS', 176, '18'),
-          ('Botswana', 'Botswana (BW)', 'Hyperion', 145, '30')]
+          ('Botswana', 'Botswana (BW)', 'Hyperion', 145, '30'),
+          ('WHU_Hi_HanChuan', 'WHU-Hi HanChuan (WHU)', 'Headwall Nano-Hyperspec', 274, '0.109')]
 lines = [r'\begin{tabular}{llrrrrrr}', r'\toprule',
          r'Scene & Sensor & Size (pixels) & Bands & GSD (m) & Classes & Labelled & Train/test (random) \\', r'\midrule']
 for key, name, sensor, bands, gsd in SCENES:
@@ -243,6 +275,8 @@ macros = []
 for d in CORE:
     n = runs[runs.dataset == d].iloc[0]
     macros += [mac(f'ntrain{SHORT[d]}', thousands(n.n_train)), mac(f'ntest{SHORT[d]}', thousands(n.n_test))]
+w = p8s('whu_random').iloc[0]
+macros += [mac('ntrainWHU', thousands(w.n_train)), mac('ntestWHU', thousands(w.n_test))]
 s = std[(std.dataset == 'IndianPines') & (std.model == 'snsm')].iloc[0]
 macros += [mac('ntrainIPstd', thousands(s.n_train)), mac('ntestIPstd', thousands(s.n_test))]
 s = cnt[(cnt.dataset == 'IndianPines') & (cnt.model == 'snsm')].iloc[0]
@@ -252,7 +286,7 @@ for d in ['PaviaU', 'KSC']:
     macros.append(mac(f'djtest{SHORT[d]}', f'{thousands(t.n_test.min())}--{thousands(t.n_test.max())}'))
     macros.append(mac(f'djclasses{SHORT[d]}', int(t.n_test_classes.min())))
 for i, d in enumerate(DJ_SETS):   # mean AA drop from random to patch-disjoint, averaged over blocks
-    drop = np.mean([vals(runs, d, m, 'AA').mean() - vals(dj, d, m, 'AA').mean() for m in BLOCKS])
+    drop = np.mean([vals(RAND[d], d, m, 'AA').mean() - vals(DISJ[d], d, m, 'AA').mean() for m in BLOCKS])
     macros.append(mac(f'drop{SHORT[d]}', f'{drop:.1f}'))
     macros.append(mac(f'spreadDJ{SHORT[d]}', f'{dj_spread[3 * i + 2]:.2f}'))
 for (name, _), key in zip(IP_PROTOCOLS, ['Rand', 'Small', 'Cnt', 'Std']):
@@ -319,13 +353,13 @@ assert means.idxmin() == 'srm' and sig(res['KSC, smallest 1/1/2']) == set()
 
 drops = []
 for d in DJ_SETS:
-    oa = [vals(dj, d, m, 'OA').mean() for m in BLOCKS]
+    oa = [vals(DISJ[d], d, m, 'OA').mean() for m in BLOCKS]
     macros.append(mac(f'djOA{SHORT[d]}', rng(min(oa), max(oa), 0)))
-    drops.append(np.mean([vals(runs, d, m, 'AA').mean() - vals(dj, d, m, 'AA').mean() for m in BLOCKS]))
-assert min(vals(runs, d, m, 'AA').mean() - vals(dj, d, m, 'AA').mean()
+    drops.append(np.mean([vals(RAND[d], d, m, 'AA').mean() - vals(DISJ[d], d, m, 'AA').mean() for m in BLOCKS]))
+assert min(vals(RAND[d], d, m, 'AA').mean() - vals(DISJ[d], d, m, 'AA').mean()
            for d in DJ_SETS for m in BLOCKS) > 30   # "every block lost more than 30 AA points"
 macros.append(mac('dropRange', rng(min(drops), max(drops), 0)))
-sd = [vals(dj, d, m, 'AA').std(ddof=1) for d in DJ_SETS for m in BLOCKS]
+sd = [vals(DISJ[d], d, m, 'AA').std(ddof=1) for d in DJ_SETS for m in BLOCKS]
 macros.append(mac('djStdRange', rng(min(sd), max(sd), 1)))
 assert sig(res['PU, patch-disjoint']) == set() and sig(res['KSC, patch-disjoint']) == {'plain', 'gct', 'srm'}
 ksc = dj[dj.dataset == 'KSC'].groupby('model').AA.mean()
@@ -345,17 +379,37 @@ macros += [mac('paramsEca', int(blk.min())), mac('paramsSe', thousands(blk.max()
            mac('latencyRatio', f"{e.latency_ms['snsm'] / e.latency_ms['plain']:.1f}"),
            mac('trainRatio', f"{ipr[ipr.model == 'snsm'].train_time_s.mean() / ipr[ipr.model == 'plain'].train_time_s.mean():.1f}")]
 
+# Phase 8 claims: WHU-Hi, deeper host, learning rate, train-only PCA, hardest-class scarcity
+assert n_eq['WHU, random 5\\%'] == len(BASES)                      # "all equivalent on WHU-Hi random"
+whu = p8s('whu_disjoint').groupby('model').AA.mean()
+assert whu.idxmin() == 'snsm' and sig(res['WHU, patch-disjoint']) == set()   # "SNSM lowest, nothing significant"
+for s in ['PU, hardest 1/1/2', 'KSC, hardest 1/1/2', 'IP, random 5\\%, deeper host', 'KSC, patch-disjoint, deeper host']:
+    assert sig(res[s]) == set(), s                                   # "no significant difference"
+hard = max(abs(v[0]) for s in ['PU, hardest 1/1/2', 'KSC, hardest 1/1/2'] for v in res[s].values())
+deep = p8s('deep_ip_random').groupby('model').AA.mean()
+assert deep.idxmax() != 'snsm'                                       # "SNSM is no longer the best block"
+assert sig(res['KSC, patch-disjoint, train-only PCA']) == {'cbam'}
+tp = p8s('trainpca_ksc_disjoint').groupby('model').AA.mean()
+sp = dj[dj.dataset == 'KSC'].groupby('model').AA.mean()[BLOCKS]
+lo, hi = (sorted(v[0] for v in res[f'IP, random 5\\%, lr $3\\times10^{{-{e}}}$'].values()) for e in (4, 3))
+assert min(lo) > 5 and max(hi) < 2.5                                 # gap grows at lr 3e-4, shrinks at 3e-3
+macros += [mac('hardMax', f'{hard:.1f}'), mac('deepIPspread', f'{np.ptp(deep):.2f}'),
+           mac('trainPcaRange', rng(tp.min(), tp.max(), 1)), mac('scenePcaRange', rng(sp.min(), sp.max(), 1)),
+           mac('lrLowGain', rng(lo[0], lo[-1], 1)), mac('lrHighMax', f'{hi[-1]:.1f}'),
+           mac('spreadWHUrand', f'{dj_spread[6]:.2f}'),
+           mac('whuDisjAA', rng(whu.min(), whu.max(), 1))]
+
 # Equivalence (TOST, +-MARGIN) and global false-discovery-rate claims
 for s in ['IP, random 50/15', 'IP, standard', 'IP, smallest 15']:
     assert n_eq[s] == len(BASES), (s, n_eq[s])            # "all seven comparisons equivalent within +-1"
-for s in ['PU, patch-disjoint', 'KSC, patch-disjoint']:
+for s in ['PU, patch-disjoint', 'KSC, patch-disjoint', 'WHU, patch-disjoint']:
     assert n_eq[s] == 0, (s, n_eq[s])                      # "equivalence cannot be shown on patch-disjoint splits"
 assert n_eq['IP, random 5\\%'] == 0
 seed_sd = np.median([vals(runs, 'IndianPines', m, 'AA').std(ddof=1) for m in BLOCKS])
 assert MARGIN < seed_sd / 2, seed_sd                       # "less than half the seed-to-seed standard deviation"
 macros += [mac('margin', f'{MARGIN:.0f}'), mac('seedSdIP', f'{seed_sd:.1f}'),
            mac('bhSig', bh_count(all_p)), mac('bhTotal', len(all_p)),
-           mac('holmSig', sum(n_sig.values())), mac('nSettings', len(SETTINGS))]
+           mac('holmSig', sum(n_sig.values())), mac('nSettings', len(res))]
 for s, key in [('PU, smallest 1/1/2', 'PUscarce'), ('KSC, smallest 1/1/2', 'KSCscarce')]:
     macros.append(mac(f'neq{key}', n_eq[s]))
 
