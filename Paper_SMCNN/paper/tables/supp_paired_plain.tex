@@ -1,0 +1,26 @@
+\begin{tabular}{lccccccc}
+\toprule
+Setting & SE & ECA & CBAM & GCT & SRM & SNSM ($\gamma$) & SNSM ($\gamma{+}\beta$) \\
+\midrule
+IP, random 5\% & +0.55 & +1.38 & +2.09$^{*}$ & +0.58$^{*}$$^{\dagger}$ & +3.55$^{*}$ & +3.40$^{*}$ & +3.84$^{*}$ \\
+IP, smallest 15 & -0.11$^{\dagger}$ & +0.06$^{\dagger}$ & -0.20$^{\dagger}$ & +0.04$^{\dagger}$ & -0.02$^{\dagger}$ & +0.09$^{\dagger}$ & +0.39$^{*}$$^{\dagger}$ \\
+IP, random 50/15 & +0.07$^{\dagger}$ & -0.05$^{\dagger}$ & -0.06$^{\dagger}$ & -0.01$^{\dagger}$ & -0.08$^{\dagger}$ & -0.07$^{\dagger}$ & -0.01$^{\dagger}$ \\
+IP, standard & +0.01$^{\dagger}$ & -0.09$^{\dagger}$ & +0.21$^{\dagger}$ & -0.01$^{\dagger}$ & +0.26$^{*}$$^{\dagger}$ & +0.13$^{\dagger}$ & +0.24$^{\dagger}$ \\
+\midrule
+PU, smallest 1/1/2 & +0.15$^{\dagger}$ & +0.60 & -0.29 & +0.55$^{\dagger}$ & -0.05$^{\dagger}$ & +0.99 & -0.59 \\
+KSC, smallest 1/1/2 & -1.03$^{*}$ & -0.63 & -0.78 & -0.03$^{\dagger}$ & -1.65$^{*}$ & -0.27 & -0.24$^{\dagger}$ \\
+PU, hardest 1/1/2 & -0.01$^{\dagger}$ & +0.33 & +0.01$^{\dagger}$ & +0.20$^{\dagger}$ & +0.18$^{\dagger}$ & +1.79$^{*}$ & +0.97 \\
+KSC, hardest 1/1/2 & -0.17$^{\dagger}$ & +0.52 & -0.43 & -0.06$^{\dagger}$ & +0.06$^{\dagger}$ & -0.19 & +0.71 \\
+\midrule
+WHU, random 5\% & -0.05$^{\dagger}$ & -0.03$^{\dagger}$ & -0.06$^{\dagger}$ & -0.06$^{\dagger}$ & +0.00$^{\dagger}$ & -0.03$^{\dagger}$ & -0.06$^{\dagger}$ \\
+PU, patch-disjoint & +0.78 & +0.70 & -0.72 & -0.61 & -1.02 & +0.28 & +0.31 \\
+KSC, patch-disjoint & +3.65$^{*}$ & +1.60 & +2.55 & -0.06$^{\dagger}$ & -0.79 & +2.06 & +3.46$^{*}$ \\
+WHU, patch-disjoint & +0.37 & -0.24 & -0.16 & -0.69 & -1.17 & -1.55 & -2.01 \\
+\midrule
+IP, random 5\%, deeper host & -0.67 & -0.70 & -0.18$^{\dagger}$ & -0.01$^{\dagger}$ & +0.34 & -0.33 & -0.53 \\
+KSC, patch-disjoint, deeper host & -1.08 & +0.98 & -0.54 & -0.25 & -2.22 & +0.12 & -1.88 \\
+KSC, patch-disjoint, train-only PCA & +1.31 & +0.35 & +2.71 & -0.20$^{\dagger}$ & -1.32 & +0.72 & +0.33 \\
+IP, random 5\%, lr $3\times10^{-4}$ & +0.74 & -0.10 & +2.04 & +0.10$^{\dagger}$ & +2.79 & +2.89 & +8.16 \\
+IP, random 5\%, lr $3\times10^{-3}$ & -0.50 & +0.42 & +0.18 & +0.14$^{\dagger}$ & +0.70 & +1.01 & +0.98 \\
+\bottomrule
+\end{tabular}

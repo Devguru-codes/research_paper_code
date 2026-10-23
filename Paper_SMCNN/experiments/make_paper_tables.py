@@ -16,7 +16,7 @@ FINAL = os.path.join(HERE, 'results')
 OUT = os.path.join(HERE, '..', 'paper', 'tables')
 os.makedirs(OUT, exist_ok=True)
 
-LABELS = {'plain': 'Plain CNN', 'se_gamma': r'SE ($\gamma$)', 'eca_gamma': r'ECA ($\gamma$)', 'cbam': 'CBAM',
+LABELS = {'plain': 'Plain CNN', 'se_gamma': 'SE', 'eca_gamma': 'ECA', 'cbam': 'CBAM',
           'gct': 'GCT', 'srm': 'SRM', 'snsm_gamma': r'SNSM ($\gamma$)', 'snsm': r'SNSM ($\gamma{+}\beta$)',
           'fc_gamma_beta': r'FC ($\gamma{+}\beta$)', 'hybridsn': 'HybridSN', 'ssftt': 'SSFTT'}
 BLOCKS = ['plain', 'se_gamma', 'eca_gamma', 'cbam', 'gct', 'srm', 'snsm_gamma', 'snsm']
@@ -87,27 +87,27 @@ def t_ci(d, level=0.95):
 assert np.allclose(t_ci(np.array([1.0, 2.0, 3.0, 4.0])), (2.5 - 3.182446 * 0.645497, 2.5 + 3.182446 * 0.645497))
 
 
-def equivalent(d):
-    # Paired TOST at alpha = 0.05: equivalent within +-MARGIN if the 90% t interval lies inside (-MARGIN, MARGIN).
+def equivalent(d, margin=MARGIN):
+    # Paired TOST at alpha = 0.05: equivalent within +-margin if the 90% t interval lies inside (-margin, margin).
     lo, hi = t_ci(d, 0.90)
-    return -MARGIN < lo and hi < MARGIN
+    return -margin < lo and hi < margin
 
 
 all_p = []   # raw Wilcoxon p-values of every reported comparison, for a global Benjamini-Hochberg check
 
 
-def paired(df, ds, col):
-    # SNSM (gamma+beta) minus each baseline on shared seeds: mean, 95% t interval, wins, n, Holm-adjusted Wilcoxon p
-    # (Holm family = the seven comparisons of one scene and protocol), raw p, equivalence within +-MARGIN.
-    ref = vals(df, ds, 'snsm', col)
-    diffs = [(ref - vals(df, ds, m, col)).dropna() for m in BASES]
-    assert all(len(d) == len(ref) for d in diffs), f'{ds}: a block is missing seeds that SNSM has'
+def paired(df, ds, col, ref_model='snsm', bases=BASES):
+    # ref_model minus each baseline on shared seeds: mean, 95% t interval, wins, n, Holm-adjusted Wilcoxon p
+    # (Holm family = the comparisons of one scene and protocol), raw p, equivalence within +-MARGIN, differences.
+    ref = vals(df, ds, ref_model, col)
+    diffs = [(ref - vals(df, ds, m, col)).dropna() for m in bases]
+    assert all(len(d) == len(ref) for d in diffs), f'{ds}: a block is missing seeds that {ref_model} has'
     raw = np.array([wilcoxon(d).pvalue for d in diffs])
     p = holm(raw)
-    if col == 'AA':
+    if col == 'AA' and ref_model == 'snsm':
         all_p.extend(raw)
-    return {m: (d.mean(), t_ci(d.to_numpy()), int((d > 0).sum()), len(d), pv, pr, equivalent(d.to_numpy()))
-            for m, d, pv, pr in zip(BASES, diffs, p, raw)}
+    return {m: (d.mean(), t_ci(d.to_numpy()), int((d > 0).sum()), len(d), pv, pr, equivalent(d.to_numpy()), d.to_numpy())
+            for m, d, pv, pr in zip(bases, diffs, p, raw)}
 
 
 def bh_count(p, q=0.05):
@@ -118,6 +118,17 @@ def bh_count(p, q=0.05):
 
 
 assert bh_count([0.001, 0.02, 0.04, 0.9]) == 2 and bh_count([0.001, 0.02, 0.03, 0.9]) == 3 and bh_count([0.5, 0.6]) == 0
+
+
+def bh_cut(p, q=0.05):
+    # Largest raw p-value that is still a Benjamini-Hochberg discovery (-1 if there is none).
+    k = bh_count(p, q)
+    return np.sort(np.asarray(p))[k - 1] if k else -1.0
+
+
+assert bh_cut([0.001, 0.02, 0.04, 0.9]) == 0.02 and bh_cut([0.5, 0.6]) == -1.0
+# With five paired seeds the smallest two-sided Wilcoxon p is 2/2^5 = 0.0625, so significance is impossible.
+assert abs(wilcoxon(np.arange(1.0, 6.0)).pvalue - 0.0625) < 1e-9
 
 
 # Table: random 5% splits, OA / AA on the four core scenes (best mean per column in bold).
@@ -195,10 +206,12 @@ SHORT_BLOCK = {'plain': 'Plain', 'se_gamma': 'SE', 'eca_gamma': 'ECA', 'cbam': '
                'snsm_gamma': r'SNSM ($\gamma$)'}
 res = {name: paired(df, d, 'AA') for name, df, d in SETTINGS if name}
 res_oa = {name: paired(df, d, 'OA') for name, df, d in SETTINGS if name}
+BH_CUT = bh_cut(all_p)   # all_p holds the AA comparisons only, so the BH mark applies to the AA tables
 
 
-def mark(v):
-    return ('$^{*}$' if v[4] < 0.05 else '') + ('$^{\\dagger}$' if v[6] else '')
+def mark(v, bh=False):
+    return (('$^{*}$' if v[4] < 0.05 else '') + ('$^{\\ddagger}$' if bh and v[5] <= BH_CUT else '')
+            + ('$^{\\dagger}$' if v[6] else ''))
 
 
 def paired_table(r, cell, name):
@@ -213,12 +226,40 @@ def paired_table(r, cell, name):
     write(name, lines)
 
 
-paired_table(res, lambda v: f'{v[0]:+.2f}{mark(v)}', 'paired.tex')
+paired_table(res, lambda v: f'{v[0]:+.2f}{mark(v, bh=True)}', 'paired.tex')
 paired_table(res, lambda v: f'{v[0]:+.2f} [{v[1][0]:+.1f}, {v[1][1]:+.1f}]', 'supp_paired_ci.tex')
 paired_table(res_oa, lambda v: f'{v[0]:+.2f}{mark(v)}', 'supp_paired_oa.tex')
 n_sig = {s: sum(v[4] < 0.05 for v in res[s].values()) for s in res}
 n_eq = {s: sum(v[6] for v in res[s].values()) for s in res}
 ci_width = {s: np.median([v[1][1] - v[1][0] for v in res[s].values()]) for s in res}
+bh_sig = {s: {m for m, v in res[s].items() if v[5] <= BH_CUT} for s in res}
+
+# Supplement: each block against the plain CNN (no attention), so no block serves as the reference
+NOT_PLAIN = [m for m in BLOCKS if m != 'plain']
+res_plain, plain_sig = {}, {}
+lines = [r'\begin{tabular}{l' + 'c' * len(NOT_PLAIN) + '}', r'\toprule',
+         'Setting & ' + ' & '.join(SHORT_BLOCK.get(m, r'SNSM ($\gamma{+}\beta$)') for m in NOT_PLAIN) + r' \\', r'\midrule']
+for s, df, d in SETTINGS:
+    if s is None:
+        lines.append(r'\midrule')
+        continue
+    res_plain[s] = r = {m: paired(df, d, 'AA', ref_model=m, bases=['plain'])['plain'] for m in NOT_PLAIN}
+    # Holm across the seven blocks of a row, as in the main paired table
+    adj = dict(zip(NOT_PLAIN, holm(np.array([r[m][5] for m in NOT_PLAIN]))))
+    plain_sig[s] = {m for m in NOT_PLAIN if adj[m] < 0.05}
+    lines.append(s + ' & ' + ' & '.join(f'{r[m][0]:+.2f}' + ('$^{*}$' if adj[m] < 0.05 else '')
+                                        + ('$^{\\dagger}$' if r[m][6] else '') for m in NOT_PLAIN) + r' \\')
+write('supp_paired_plain.tex', lines + [r'\bottomrule', r'\end{tabular}'])
+
+# Supplement: number of the seven comparisons per setting that are equivalent at other margins
+MARGINS = [0.5, 1.0, 2.0]
+n_eq_m = {s: [sum(equivalent(v[7], mg) for v in res[s].values()) for mg in MARGINS] for s in res}
+lines = [r'\begin{tabular}{l' + 'c' * len(MARGINS) + '}', r'\toprule',
+         'Setting & ' + ' & '.join(f'$\\pm${mg:g}' for mg in MARGINS) + r' \\', r'\midrule']
+for s, _, _ in SETTINGS:
+    lines.append(r'\midrule' if s is None else s + ' & ' + ' & '.join(str(k) for k in n_eq_m[s]) + r' \\')
+write('supp_margin.tex', lines + [r'\bottomrule', r'\end{tabular}'])
+assert all(n_eq_m[s][1] == n_eq[s] for s in res)
 
 # Table: SNSM descriptor / initialisation ablation on IP (random 5%)
 ABL = [('snsm', 'mean, var, grad (SNSM)'), ('snsm_mean', 'mean'), ('snsm_mean_var', 'mean, var'),
@@ -393,11 +434,51 @@ tp = p8s('trainpca_ksc_disjoint').groupby('model').AA.mean()
 sp = dj[dj.dataset == 'KSC'].groupby('model').AA.mean()[BLOCKS]
 lo, hi = (sorted(v[0] for v in res[f'IP, random 5\\%, lr $3\\times10^{{-{e}}}$'].values()) for e in (4, 3))
 assert min(lo) > 5 and max(hi) < 2.5                                 # gap grows at lr 3e-4, shrinks at 3e-3
+assert sig(res['IP, random 5\\%, lr $3\\times10^{-3}$']) == set()
+lr_lo = p8s('lr3e-4_ip_random').groupby('model').AA.mean()[BLOCKS]
+base = runs[runs.dataset == 'IndianPines'].groupby('model').AA.mean()[BLOCKS]
+assert (lr_lo < base).all() and (base - lr_lo).idxmin() == 'snsm'   # "all undertrain at 3e-4; SNSM degrades least"  # "at 3e-3 (15 seeds) no difference is significant"
 macros += [mac('hardMax', f'{hard:.1f}'), mac('deepIPspread', f'{np.ptp(deep):.2f}'),
            mac('trainPcaRange', rng(tp.min(), tp.max(), 1)), mac('scenePcaRange', rng(sp.min(), sp.max(), 1)),
            mac('lrLowGain', rng(lo[0], lo[-1], 1)), mac('lrHighMax', f'{hi[-1]:.1f}'),
            mac('spreadWHUrand', f'{dj_spread[6]:.2f}'),
            mac('whuDisjAA', rng(whu.min(), whu.max(), 1))]
+
+# A deeper plain CNN versus the best shallow block, and the plain CNN's gain from the higher learning rate (IP random)
+shallow = runs[runs.dataset == 'IndianPines'].groupby('model').AA.mean()[BLOCKS]
+lr_hi = p8s('lr3e-3_ip_random').groupby('model').AA.mean()
+assert deep['plain'] > shallow.max()                                 # "a deeper plain CNN exceeds every shallow block"
+macros += [mac('deepPlainIP', f"{deep['plain']:.1f}"), mac('shallowBestIP', f'{shallow.max():.1f}'),
+           mac('plainIP', f"{shallow['plain']:.1f}"), mac('plainLrHigh', f"{lr_hi['plain']:.1f}"),
+           mac('nseedsLrHigh', vals(p8s('lr3e-3_ip_random'), 'IndianPines', 'snsm', 'AA').size)]
+
+# Ablation: the gradient input adds nothing (mean + variance alone is at least as good as the full probe)
+dv = vals(abl, 'IndianPines', 'snsm_mean_var', 'AA') - a
+assert dv.mean() > 0
+macros += [mac('ablVarGain', f'{dv.mean():.2f}'), mac('ablVarWins', int((dv > 0).sum()))]
+
+# Phase 4: the blocks applied to the raw bands in wavelength order (five seeds; CBAM and SRM were not run)
+band = pd.read_csv(os.path.join(FINAL, 'phase4_band_runs.csv')).groupby(['dataset', 'model']).AA.mean()
+band_ip = band['IndianPines']
+band_gain = band_ip['band_snsm'] - band_ip.drop('band_snsm')
+band_other = max(np.ptp(band[d]) for d in ['PaviaU', 'KSC'])
+assert band_ip.idxmax() == 'band_snsm' and band_other < 1
+macros += [mac('bandIPgain', rng(band_gain.min(), band_gain.max(), 1)), mac('bandOtherSpread', f'{band_other:.1f}')]
+
+# Which per-setting Holm discoveries survive the global BH correction
+assert bh_sig['KSC, patch-disjoint'] == {'plain', 'gct'}             # "SRM no longer significant under BH"
+assert bh_sig['IP, random 5\\%'] == sig(res['IP, random 5\\%'])        # "all five IP random differences survive"
+macros.append(mac('bhSmallKeep', len(bh_sig['IP, smallest 15'])))
+# Margin sensitivity: at +-0.5 only the settings with 15+ pixels per class or WHU random stay fully equivalent;
+# at +-2 the patch-disjoint settings still show at most one equivalent comparison
+assert {s for s in res if n_eq_m[s][0] == len(BASES)} == {'IP, random 50/15', 'IP, standard', 'WHU, random 5\\%'}
+assert all(n_eq_m[s][2] <= 1 for s in ['PU, patch-disjoint', 'KSC, patch-disjoint', 'WHU, patch-disjoint'])
+# Against the plain CNN: on patch-disjoint KSC only SE and SNSM (gamma+beta) are significantly better
+assert plain_sig['KSC, patch-disjoint'] == {'se_gamma', 'snsm'} and plain_sig['PU, patch-disjoint'] == set()
+assert plain_sig['IP, random 5\\%'] == {'cbam', 'gct', 'srm', 'snsm_gamma', 'snsm'}
+print('BH survivors:', {s: sorted(v) for s, v in bh_sig.items() if v})
+print('Holm:', {s: sorted(sig(res[s])) for s in res if sig(res[s])})
+print('Margins (0.5, 1, 2):', n_eq_m)
 
 # Equivalence (TOST, +-MARGIN) and global false-discovery-rate claims
 for s in ['IP, random 50/15', 'IP, standard', 'IP, smallest 15']:

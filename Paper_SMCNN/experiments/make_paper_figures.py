@@ -22,7 +22,7 @@ HIGHLIGHT, MUTED, INK, GRID = '#2a78d6', '#8a8984', '#0b0b0b', '#e4e3df'
 plt.rcParams.update({'font.size': 8, 'font.family': 'serif', 'axes.edgecolor': '#52514e',
                      'axes.linewidth': 0.6, 'xtick.color': '#52514e', 'ytick.color': '#52514e',
                      'axes.labelcolor': INK, 'pdf.fonttype': 42})
-NAMES = {'plain': 'Plain CNN', 'se_gamma': r'SE ($\gamma$)', 'eca_gamma': r'ECA ($\gamma$)', 'cbam': 'CBAM',
+NAMES = {'plain': 'Plain CNN', 'se_gamma': 'SE', 'eca_gamma': 'ECA', 'cbam': 'CBAM',
          'gct': 'GCT', 'srm': 'SRM', 'snsm_gamma': r'SNSM ($\gamma$)', 'snsm': r'SNSM ($\gamma$+$\beta$)'}
 BASES = ['plain', 'se_gamma', 'eca_gamma', 'cbam', 'gct', 'srm', 'snsm_gamma']
 

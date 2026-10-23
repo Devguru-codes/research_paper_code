@@ -11,7 +11,7 @@
 \begin{document}
 \begin{center}
 {\large\bfseries Supplementary material}\\[4pt]
-Channel attention in few-label hyperspectral CNNs: an equivalence-tested comparison
+Channel attention in lightweight hyperspectral CNNs: an equivalence-tested comparison
 \end{center}
 
 \begin{figure}[h]
@@ -34,6 +34,18 @@ Channel attention in few-label hyperspectral CNNs: an equivalence-tested compari
 
 \begin{table}[h]
 \centering
+\caption{Paired AA differences block $-$ plain CNN (points), so that no block serves as the reference. $^{*}$: Holm-corrected Wilcoxon $p<0.05$ within the row (seven comparisons); $^{\dagger}$: equivalent within $\pm$\margin\ point (paired TOST). GCT stays close to the plain CNN in most settings because its gate starts at the identity.}
+\resizebox{\textwidth}{!}{\input{tables/supp_paired_plain.tex}}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Sensitivity to the equivalence margin: number of the seven comparisons SNSM ($\gamma{+}\beta$) $-$ block per setting that are equivalent (paired TOST, $\alpha=0.05$) within $\pm$0.5, $\pm$1 (main paper) and $\pm$2 AA points.}
+\input{tables/supp_margin.tex}
+\end{table}
+
+\begin{table}[h]
+\centering
 \caption{Paired OA differences SNSM ($\gamma{+}\beta$) $-$ block (points). $^{*}$: Holm-corrected Wilcoxon $p<0.05$ within the row; $^{\dagger}$: equivalent within $\pm$\margin\ point (paired TOST).}
 \resizebox{\textwidth}{!}{\input{tables/supp_paired_oa.tex}}
 \end{table}
@@ -46,7 +58,7 @@ Channel attention in few-label hyperspectral CNNs: an equivalence-tested compari
 
 \begin{table}[h]
 \centering
-\caption{Robustness checks: AA (\%, mean $\pm$ std) of the eight backbone variants in a deeper, wider host (four residual blocks of 128 channels; ten seeds), with PCA fitted on training pixels only (15 seeds), with the three hardest classes reduced to 1, 1 and 2 training pixels (15 seeds), and with learning rates $3\times10^{-4}$ and $3\times10^{-3}$ (five seeds). The last row is the range of the block means.}
+\caption{Robustness checks: AA (\%, mean $\pm$ std) of the eight backbone variants in a deeper, wider host (four residual blocks of 128 channels; ten seeds), with PCA fitted on training pixels only (15 seeds), with the three hardest classes reduced to 1, 1 and 2 training pixels (15 seeds), and with learning rates $3\times10^{-4}$ (five seeds) and $3\times10^{-3}$ (15 seeds). The last row is the range of the block means.}
 \resizebox{\textwidth}{!}{\input{tables/supp_robust.tex}}
 \end{table}
 

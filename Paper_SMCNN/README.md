@@ -1,10 +1,10 @@
-# Does the choice of channel attention matter for few-label hyperspectral classification?
+# Channel attention in lightweight hyperspectral CNNs: an equivalence-tested comparison
 
 Code, results and manuscript for the Remote Sensing Letters submission
-**"Does the choice of channel attention matter for few-label hyperspectral classification? A controlled comparison under random, standard and patch-disjoint splits"**.
+**"Channel attention in lightweight hyperspectral CNNs: an equivalence-tested comparison"**.
 
 Seven channel-modulation blocks (SE, ECA, CBAM, GCT, SRM, SNSM γ, SNSM γ+β) plus a plain CNN are compared on one backbone
-under three evaluation protocols, with paired seeds and Holm-corrected Wilcoxon tests.
+on five scenes under seven protocols, with paired seeds, Holm-corrected Wilcoxon tests and TOST equivalence tests.
 
 ## Layout
 
@@ -41,7 +41,7 @@ Paper_SMCNN/
 - `phase5_std_runs.csv` — standard Indian Pines split, seeds 42-56
 - `phase6_counts_runs.csv` — random Indian Pines split with 15 training pixels for the three smallest classes and 50 for the others, seeds 42-56
 - `phase7_scarcity_runs.csv` — random 5% splits with only the three smallest classes changed (`smallfix`: IP to 15 pixels; `scarce`: PU and KSC to 1/1/2), seeds 42-56
-- `phase8_runs.csv` — robustness studies (column `study`): WHU-Hi random and patch-disjoint (seeds 42-51), deeper host on IP random and KSC patch-disjoint (models prefixed `deep_`, seeds 42-51), learning rates 3e-4 and 3e-3 on IP random (seeds 42-46), train-only PCA on KSC patch-disjoint and hardest-class scarcity on PU and KSC (seeds 42-56)
+- `phase8_runs.csv` — robustness studies (column `study`): WHU-Hi random and patch-disjoint (seeds 42-51), deeper host on IP random and KSC patch-disjoint (models prefixed `deep_`, seeds 42-51), learning rate 3e-4 on IP random (seeds 42-46), learning rate 3e-3 on IP random (seeds 42-56), train-only PCA on KSC patch-disjoint and hardest-class scarcity on PU and KSC (seeds 42-56)
 - `efficiency.csv` — parameters, MACs and latency on an IP patch
 
 ### How `results/` was assembled
@@ -70,6 +70,7 @@ ran a notebook, sometimes restricted to some datasets or seeds; their `runs.csv`
 | | `whu_disjoint` | `p8-whu-disjoint` (Phase 8) |
 | | deeper host, learning rates, train-only PCA, `hard_ksc` | `p8-misc` (Phase 8) |
 | | `hard_pu` | `p8-hard-pu` (Phase 8) |
+| | `lr3e-3_ip_random`, seeds 47-56 | `p8-lr-high` (Phase 8, `PART = 'lr_high'`) |
 
 Before any notebook is changed, run `python experiments/check_notebooks.py`: it fails if the copies of the shared
 data loader and training loop differ between notebooks.
