@@ -96,7 +96,7 @@ def equivalent(d, margin=MARGIN):
 all_p = []   # raw Wilcoxon p-values of every reported comparison, for a global Benjamini-Hochberg check
 
 
-def paired(df, ds, col, ref_model='snsm', bases=BASES):
+def paired(df, ds, col, ref_model='snsm', bases=BASES, track=True):
     # ref_model minus each baseline on shared seeds: mean, 95% t interval, wins, n, Holm-adjusted Wilcoxon p
     # (Holm family = the comparisons of one scene and protocol), raw p, equivalence within +-MARGIN, differences.
     ref = vals(df, ds, ref_model, col)
@@ -104,7 +104,7 @@ def paired(df, ds, col, ref_model='snsm', bases=BASES):
     assert all(len(d) == len(ref) for d in diffs), f'{ds}: a block is missing seeds that {ref_model} has'
     raw = np.array([wilcoxon(d).pvalue for d in diffs])
     p = holm(raw)
-    if col == 'AA' and ref_model == 'snsm':
+    if col == 'AA' and track:
         all_p.extend(raw)
     return {m: (d.mean(), t_ci(d.to_numpy()), int((d > 0).sum()), len(d), pv, pr, equivalent(d.to_numpy()), d.to_numpy())
             for m, d, pv, pr in zip(bases, diffs, p, raw)}
@@ -179,7 +179,8 @@ sc_spread = block_table([(df, d, 'AA') for _, df, d in SC_COLS],
                         ['Block & ' + ' & '.join(n for n, _, _ in SC_COLS) + r' \\'], 'supp_scarcity.tex')
 
 # Phase 8 AA per block (supplement)
-P8_COLS = [('IP, deeper', 'deep_ip_random', 'IndianPines'), ('KSC disj., deeper', 'deep_ksc_disjoint', 'KSC'),
+P8_COLS = [('PU, block-disj.', 'blocks_pu', 'PaviaU'), ('KSC, block-disj.', 'blocks_ksc', 'KSC'),
+           ('IP, deeper', 'deep_ip_random', 'IndianPines'), ('KSC disj., deeper', 'deep_ksc_disjoint', 'KSC'),
            ('KSC disj., train PCA', 'trainpca_ksc_disjoint', 'KSC'), ('PU, hardest', 'hard_pu', 'PaviaU'),
            ('KSC, hardest', 'hard_ksc', 'KSC'), ('IP, lr 3e-4', 'lr3e-4_ip_random', 'IndianPines'),
            ('IP, lr 3e-3', 'lr3e-3_ip_random', 'IndianPines')]
@@ -196,7 +197,8 @@ SETTINGS = [('IP, random 5\\%', runs, 'IndianPines'), ('IP, smallest 15', sc[sc.
             ('PU, hardest 1/1/2', p8s('hard_pu'), 'PaviaU'), ('KSC, hardest 1/1/2', p8s('hard_ksc'), 'KSC'), RULE,
             ('WHU, random 5\\%', p8s('whu_random'), 'WHU_Hi_HanChuan'),
             ('PU, patch-disjoint', dj, 'PaviaU'), ('KSC, patch-disjoint', dj, 'KSC'),
-            ('WHU, patch-disjoint', p8s('whu_disjoint'), 'WHU_Hi_HanChuan'), RULE,
+            ('WHU, patch-disjoint', p8s('whu_disjoint'), 'WHU_Hi_HanChuan'),
+            ('PU, block-disjoint', p8s('blocks_pu'), 'PaviaU'), ('KSC, block-disjoint', p8s('blocks_ksc'), 'KSC'), RULE,
             ('IP, random 5\\%, deeper host', p8s('deep_ip_random'), 'IndianPines'),
             ('KSC, patch-disjoint, deeper host', p8s('deep_ksc_disjoint'), 'KSC'),
             ('KSC, patch-disjoint, train-only PCA', p8s('trainpca_ksc_disjoint'), 'KSC'),
@@ -205,7 +207,7 @@ SETTINGS = [('IP, random 5\\%', runs, 'IndianPines'), ('IP, smallest 15', sc[sc.
 SHORT_BLOCK = {'plain': 'Plain', 'se_gamma': 'SE', 'eca_gamma': 'ECA', 'cbam': 'CBAM', 'gct': 'GCT', 'srm': 'SRM',
                'snsm_gamma': r'SNSM ($\gamma$)'}
 res = {name: paired(df, d, 'AA') for name, df, d in SETTINGS if name}
-res_oa = {name: paired(df, d, 'OA') for name, df, d in SETTINGS if name}
+res_oa = {name: paired(df, d, 'OA', track=False) for name, df, d in SETTINGS if name}
 BH_CUT = bh_cut(all_p)   # all_p holds the AA comparisons only, so the BH mark applies to the AA tables
 
 
@@ -243,7 +245,7 @@ for s, df, d in SETTINGS:
     if s is None:
         lines.append(r'\midrule')
         continue
-    res_plain[s] = r = {m: paired(df, d, 'AA', ref_model=m, bases=['plain'])['plain'] for m in NOT_PLAIN}
+    res_plain[s] = r = {m: paired(df, d, 'AA', ref_model=m, bases=['plain'], track=False)['plain'] for m in NOT_PLAIN}
     # Holm across the seven blocks of a row, as in the main paired table
     adj = dict(zip(NOT_PLAIN, holm(np.array([r[m][5] for m in NOT_PLAIN]))))
     plain_sig[s] = {m for m in NOT_PLAIN if adj[m] < 0.05}
@@ -484,6 +486,25 @@ lines = [r'\begin{tabular}{lccc}', r'\toprule', 'Block & ' + ' & '.join(SHORT[d]
 lines += [label + ' & ' + ' & '.join(fmt(vals(band_runs, d, m, 'AA'), top[d]) for d in BAND_SETS) + r' \\' for m, label in BAND]
 write('supp_band.tex', lines + [r'\bottomrule', r'\end{tabular}'])
 
+# Block-disjoint splits: accuracy levels, drops from random splits, and which blocks differ
+blk = {d: p8s(st).groupby('model').AA.mean()[BLOCKS] for d, st in [('PaviaU', 'blocks_pu'), ('KSC', 'blocks_ksc')]}
+blk_drop = {d: (runs[runs.dataset == d].groupby('model').AA.mean()[BLOCKS] - blk[d]).mean() for d in blk}
+assert sig(res['PU, block-disjoint']) == {'plain', 'eca_gamma', 'gct'} and sig(res['KSC, block-disjoint']) == set()
+assert plain_sig['PU, block-disjoint'] == {'cbam', 'srm', 'snsm_gamma', 'snsm'}       # four blocks worse than plain
+assert all(res_plain['PU, block-disjoint'][m][0] < 0 for m in plain_sig['PU, block-disjoint'])
+assert blk['PaviaU'].idxmax() in ('plain', 'gct') and n_eq['PU, block-disjoint'] == 0 and n_eq['KSC, block-disjoint'] == 0
+macros += [mac('blockPU', rng(blk['PaviaU'].min(), blk['PaviaU'].max(), 1)),
+           mac('blockKSC', rng(blk['KSC'].min(), blk['KSC'].max(), 1)),
+           mac('blockDropPU', f"{blk_drop['PaviaU']:.0f}"), mac('blockDropKSC', f"{blk_drop['KSC']:.0f}"),
+           mac('spatialDrop', rng(min(min(drops), *[(runs[runs.dataset == d].groupby('model').AA.mean()[BLOCKS] - blk[d]).min() for d in blk]), max(drops), 0)),
+           mac('blockSnsmPU', f"{-res['PU, block-disjoint']['plain'][0]:.1f}")]
+
+# GCT gates: how far the trained gate 1 + tanh(.) moves from the identity, and the rerun reproduces Phase 1 exactly
+gates = pd.read_csv(os.path.join(FINAL, 'phase8_gct_gates.csv'))
+rerun = vals(p8s('gct_gate_ip'), 'IndianPines', 'gct', 'AA')
+assert np.allclose(rerun, vals(runs, 'IndianPines', 'gct', 'AA').loc[rerun.index])   # bit-for-bit reproduction
+macros += [mac('gctGateDev', f'{gates.gate_abs_dev.max():.2f}')]
+
 # Which per-setting Holm discoveries survive the global BH correction
 assert bh_sig['KSC, patch-disjoint'] == {'plain', 'gct'}             # "SRM no longer significant under BH"
 assert bh_sig['IP, random 5\\%'] == sig(res['IP, random 5\\%'])        # "all five IP random differences survive"
@@ -505,6 +526,7 @@ for s in ['IP, random 50/15', 'IP, standard', 'IP, smallest 15']:
 for s in ['PU, patch-disjoint', 'KSC, patch-disjoint', 'WHU, patch-disjoint']:
     assert n_eq[s] == 0, (s, n_eq[s])                      # "equivalence cannot be shown on patch-disjoint splits"
 assert n_eq['IP, random 5\\%'] == 0
+assert len(all_p) == len(BASES) * len(res)   # each SNSM - block AA comparison counted once
 seed_sd = np.median([vals(runs, 'IndianPines', m, 'AA').std(ddof=1) for m in BLOCKS])
 assert MARGIN < seed_sd / 2, seed_sd                       # "less than half the seed-to-seed standard deviation"
 macros += [mac('margin', f'{MARGIN:.0f}'), mac('seedSdIP', f'{seed_sd:.1f}'),

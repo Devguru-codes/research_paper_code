@@ -4,7 +4,7 @@ Code, results and manuscript for the Remote Sensing Letters submission
 **"Channel attention in lightweight hyperspectral CNNs: an equivalence-tested comparison"**.
 
 Seven channel-modulation blocks (SE, ECA, CBAM, GCT, SRM, SNSM γ, SNSM γ+β) plus a plain CNN are compared on one backbone
-on five scenes under seven protocols, with paired seeds, Holm-corrected Wilcoxon tests and TOST equivalence tests.
+on five scenes under eight protocols, with paired seeds, Holm-corrected Wilcoxon tests and TOST equivalence tests.
 
 ## Layout
 
@@ -41,7 +41,8 @@ Paper_SMCNN/
 - `phase5_std_runs.csv` — standard Indian Pines split, seeds 42-56
 - `phase6_counts_runs.csv` — random Indian Pines split with 15 training pixels for the three smallest classes and 50 for the others, seeds 42-56
 - `phase7_scarcity_runs.csv` — random 5% splits with only the three smallest classes changed (`smallfix`: IP to 15 pixels; `scarce`: PU and KSC to 1/1/2), seeds 42-56
-- `phase8_runs.csv` — robustness studies (column `study`): WHU-Hi random and patch-disjoint (seeds 42-51), deeper host on IP random and KSC patch-disjoint (models prefixed `deep_`, seeds 42-51), learning rate 3e-4 on IP random (seeds 42-46), learning rate 3e-3 on IP random (seeds 42-56), train-only PCA on KSC patch-disjoint and hardest-class scarcity on PU and KSC (seeds 42-56)
+- `phase8_runs.csv` — robustness studies (column `study`): WHU-Hi random and patch-disjoint (seeds 42-51), deeper host on IP random and KSC patch-disjoint (models prefixed `deep_`, seeds 42-51), learning rate 3e-4 on IP random (seeds 42-46), learning rate 3e-3 on IP random (seeds 42-56), train-only PCA on KSC patch-disjoint and hardest-class scarcity on PU and KSC (seeds 42-56), block-disjoint splits of PU and KSC (seeds 42-56); GCT on IP random (seeds 42-46) rerun to log its gates
+- `phase8_gct_gates.csv` — how far each trained GCT gate moves from the identity (block-disjoint PU/KSC, IP random)
 - `efficiency.csv` — parameters, MACs and latency on an IP patch
 
 ### How `results/` was assembled
@@ -71,6 +72,9 @@ ran a notebook, sometimes restricted to some datasets or seeds; their `runs.csv`
 | | deeper host, learning rates, train-only PCA, `hard_ksc` | `p8-misc` (Phase 8) |
 | | `hard_pu` | `p8-hard-pu` (Phase 8) |
 | | `lr3e-3_ip_random`, seeds 47-56 | `p8-lr-high` (Phase 8, `PART = 'lr_high'`) |
+| | `blocks_pu` | `p8-blocks-pu` (Phase 8) |
+| | `blocks_ksc`, `gct_gate_ip` | `p8-blocks-ksc` (Phase 8) |
+| `phase8_gct_gates.csv` | learned GCT gate statistics of the `p8-blocks-*` GCT runs | `p8-blocks-pu`, `p8-blocks-ksc` (Phase 8) |
 
 Before any notebook is changed, run `python experiments/check_notebooks.py`: it fails if the copies of the shared
 data loader and training loop differ between notebooks.
@@ -82,7 +86,7 @@ Every model uses the same inputs, splits and schedule:
 - KSC is read as int16: the distributed file is uint16 but holds small negative values (−27…−1) that otherwise wrap to 65509…65535
 - Wiener 5×5 per band → PCA (30 components, fitted on the whole scene without labels) → + db4 wavelet approximation = 60 features
 - 15×15 patches
-- Splits: **random** (5% of labelled pixels per class), **standard** (fixed SpectralFormer IP training/test sets, downloaded from the authors' GitHub repository inside the notebook), **patch-disjoint** (per class, the 5% of pixels nearest a random centre train; test pixels within 14 px of any training pixel are dropped)
+- Splits: **random** (5% of labelled pixels per class), **standard** (fixed SpectralFormer IP training/test sets, downloaded from the authors' GitHub repository inside the notebook), **patch-disjoint** (per class, the 5% of pixels nearest a random centre train; test pixels within 14 px of any training pixel are dropped), **block-disjoint** (the scene is cut into 16×16 blocks in a random order; each class takes its 5% block by block; same 14 px buffer)
 - AdamW (lr 1e-3, weight decay 1e-4), StepLR (×0.5 every 40 epochs), batch 64, **exactly 100 epochs**
 - No validation- or test-based checkpoint selection or early stopping; the final-epoch model is evaluated once
 - Kaggle, NVIDIA Tesla T4; the KSC patch-disjoint seeds 47-56 ran on a local RTX 3050 (Phase 3 notebook executed locally)
