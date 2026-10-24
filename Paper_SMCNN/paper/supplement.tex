@@ -64,6 +64,18 @@ Channel attention in lightweight hyperspectral CNNs: an equivalence-tested compa
 
 \begin{table}[h]
 \centering
+\caption{SNSM ($\gamma{+}\beta$) probe ablation on IP, random 5\% splits (AA, \%; five seeds). $\Delta$AA is the paired difference from the full block; wins count seeds on which the variant is better.}
+\input{tables/ablation.tex}
+\end{table}
+
+\begin{table}[h]
+\centering
+\caption{Blocks applied to the raw bands in wavelength order, without PCA or wavelet features: AA (\%, mean $\pm$ std, random 5\% splits, five seeds). CBAM and SRM were not run in this setting.}
+\input{tables/supp_band.tex}
+\end{table}
+
+\begin{table}[h]
+\centering
 \caption{Model size and cost for a $15\times15\times60$ IP patch. Training time is the mean per run (100 epochs, random 5\% splits). MMACs: multiply--accumulates of convolution and linear layers counted by \texttt{thop} (attention products and descriptor statistics excluded). Latency: batch size 1 on a Tesla T4.}
 \input{tables/supp_efficiency.tex}
 \end{table}

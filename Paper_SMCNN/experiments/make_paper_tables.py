@@ -9,7 +9,7 @@ import os
 import numpy as np
 import pandas as pd
 from scipy.stats import t as t_dist
-from scipy.stats import wilcoxon
+from scipy.stats import wilcoxon, ttest_ind
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FINAL = os.path.join(HERE, 'results')
@@ -447,7 +447,18 @@ macros += [mac('hardMax', f'{hard:.1f}'), mac('deepIPspread', f'{np.ptp(deep):.2
 # A deeper plain CNN versus the best shallow block, and the plain CNN's gain from the higher learning rate (IP random)
 shallow = runs[runs.dataset == 'IndianPines'].groupby('model').AA.mean()[BLOCKS]
 lr_hi = p8s('lr3e-3_ip_random').groupby('model').AA.mean()
-assert deep['plain'] > shallow.max()                                 # "a deeper plain CNN exceeds every shallow block"
+# "a deeper plain CNN matches the best shallow block": different seed sets (10 vs 15), so an unpaired Welch test
+deep_p = ttest_ind(vals(p8s('deep_ip_random'), 'IndianPines', 'plain', 'AA'), vals(runs, 'IndianPines', shallow.idxmax(), 'AA'),
+                   equal_var=False).pvalue
+assert deep['plain'] >= shallow.max() and deep_p > 0.05
+# Each block at its best of the three learning rates: a gap of about one point remains
+lr_lo_m = p8s('lr3e-4_ip_random').groupby('model').AA.mean()
+best_lr = pd.concat([shallow, lr_hi[BLOCKS], lr_lo_m[BLOCKS]], axis=1).max(axis=1)
+best_lr_gap = best_lr['snsm'] - best_lr['plain']
+assert 0.5 < best_lr_gap < 2 and set(best_lr.nlargest(3).index) == {'srm', 'snsm_gamma', 'snsm'}   # dispersion gates stay on top
+lr_hi_pos = sum(v[0] > 0 for v in res['IP, random 5\\%, lr $3\\times10^{-3}$'].values())
+macros += [mac('deepPlainP', f'{deep_p:.2f}'), mac('bestLrGap', f'{best_lr_gap:.1f}'), mac('bestLrRange', rng(best_lr.min(), best_lr.max(), 1)), mac('lrHighPos', lr_hi_pos),
+           mac('neqSmallHalf', n_eq_m['IP, smallest 15'][0])]
 macros += [mac('deepPlainIP', f"{deep['plain']:.1f}"), mac('shallowBestIP', f'{shallow.max():.1f}'),
            mac('plainIP', f"{shallow['plain']:.1f}"), mac('plainLrHigh', f"{lr_hi['plain']:.1f}"),
            mac('nseedsLrHigh', vals(p8s('lr3e-3_ip_random'), 'IndianPines', 'snsm', 'AA').size)]
@@ -464,6 +475,14 @@ band_gain = band_ip['band_snsm'] - band_ip.drop('band_snsm')
 band_other = max(np.ptp(band[d]) for d in ['PaviaU', 'KSC'])
 assert band_ip.idxmax() == 'band_snsm' and band_other < 1
 macros += [mac('bandIPgain', rng(band_gain.min(), band_gain.max(), 1)), mac('bandOtherSpread', f'{band_other:.1f}')]
+band_runs = pd.read_csv(os.path.join(FINAL, 'phase4_band_runs.csv'))
+BAND = [('band_none', 'Plain CNN'), ('band_se', 'SE'), ('band_eca', 'ECA'), ('band_gct', 'GCT'),
+        ('band_snsm_gamma', r'SNSM ($\gamma$)'), ('band_snsm', r'SNSM ($\gamma{+}\beta$)')]
+BAND_SETS = ['IndianPines', 'PaviaU', 'KSC']
+top = {d: max(vals(band_runs, d, m, 'AA').mean() for m, _ in BAND) for d in BAND_SETS}
+lines = [r'\begin{tabular}{lccc}', r'\toprule', 'Block & ' + ' & '.join(SHORT[d] for d in BAND_SETS) + r' \\', r'\midrule']
+lines += [label + ' & ' + ' & '.join(fmt(vals(band_runs, d, m, 'AA'), top[d]) for d in BAND_SETS) + r' \\' for m, label in BAND]
+write('supp_band.tex', lines + [r'\bottomrule', r'\end{tabular}'])
 
 # Which per-setting Holm discoveries survive the global BH correction
 assert bh_sig['KSC, patch-disjoint'] == {'plain', 'gct'}             # "SRM no longer significant under BH"
