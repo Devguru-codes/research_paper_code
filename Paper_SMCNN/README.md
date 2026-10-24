@@ -6,6 +6,8 @@ Code, results and manuscript for the Remote Sensing Letters submission
 Seven channel-modulation blocks (SE, ECA, CBAM, GCT, SRM, SNSM γ, SNSM γ+β) plus a plain CNN are compared on one backbone
 on five scenes under eight protocols, with paired seeds, Holm-corrected Wilcoxon tests and TOST equivalence tests.
 
+Reviewers: [`REVIEWERS.md`](REVIEWERS.md) maps every table, figure and number in the paper to the runs behind it.
+
 ## Layout
 
 ```
